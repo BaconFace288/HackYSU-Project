@@ -198,10 +198,14 @@ function renderFeed(snapshot) {
     }
 
     // Filter by audience: show post if audience is 'everyone' OR matches the viewer's age range
-    docs = docs.filter(d => {
-        const audience = d.data().audience || 'everyone';
-        return audience === 'everyone' || audience === currentUserAgeRange;
-    });
+    // Admins and Certified Therapists see everything
+    const isPrivileged = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
+    if (!isPrivileged) {
+        docs = docs.filter(d => {
+            const audience = d.data().audience || 'everyone';
+            return audience === 'everyone' || audience === currentUserAgeRange;
+        });
+    }
 
     if (docs.length === 0) {
         const emptyMsg = currentFeedFilter === 'hosted'
