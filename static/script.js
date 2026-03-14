@@ -496,11 +496,30 @@ window.sendMessage = async function (event) {
 
         // ---- Crisis Detection ----
         const triggeredKeyword = checkForCrisisKeywords(text);
-        if (triggeredKeyword) {
+        let aiHazardous = false;
+        let aiReason = null;
+
+        if (text) {
+            try {
+                const intentRes = await fetch('/api/check-intent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+                const intentData = await intentRes.json();
+                aiHazardous = intentData.hazardous;
+                aiReason = intentData.reason;
+            } catch (err) {
+                console.warn('AI intent check failed:', err);
+            }
+        }
+
+        if (triggeredKeyword || aiHazardous) {
+            const finalTriggerReason = triggeredKeyword || `AI Flag: ${aiReason || 'Hazardous intent detected'}`;
             // Write a flag to the admin-visible flaggedMessages collection
             await addDoc(collection(db, "flaggedMessages"), {
                 text: text,
-                triggerKeyword: triggeredKeyword,
+                triggerKeyword: finalTriggerReason,
                 uid: currentUser.uid,
                 displayName: currentUser.displayName || 'Anonymous',
                 roomId: currentRoomId,
