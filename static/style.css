@@ -9,10 +9,10 @@
     --glass-border: rgba(255, 255, 255, 0.4);
     --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
     
-    /* Vibrant Primary Accents */
-    --primary-color: #6366f1; /* Indigo 500 */
-    --primary-hover: #4f46e5; /* Indigo 600 */
-    --primary-light: #e0e7ff; /* Indigo 100 */
+    /* Suicide Awareness Accents (Teal & Purple) */
+    --primary-color: #008088; /* Teal */
+    --primary-hover: #006b72; /* Darker Teal */
+    --primary-light: #e0ecee; /* Light Teal */
     
     /* Typography */
     --text-main: #0f172a; /* Slate 900 */
@@ -21,7 +21,7 @@
     
     /* Message Backgrounds */
     --message-bg-other: #ffffff; /* Clean white card */
-    --message-bg-self: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); /* Vibrant Indigo/Purple */
+    --message-bg-self: linear-gradient(135deg, #008088 0%, #773585 100%); /* Teal to Purple */
 }
 
 * {
@@ -91,14 +91,14 @@ body {
 .logo {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #818cf8 0%, #4f46e5 100%);
+    background: linear-gradient(135deg, #008088 0%, #773585 100%);
     border-radius: 12px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 1.2rem;
     color: white;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 128, 136, 0.3);
 }
 
 .brand h2 {
@@ -342,7 +342,7 @@ body {
     background: var(--message-bg-self);
     color: var(--text-inverse);
     border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 4px 15px rgba(0, 128, 136, 0.25);
     border: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -370,8 +370,8 @@ body {
 }
 
 .input-wrapper:focus-within {
-    border-color: rgba(99, 102, 241, 0.4);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    border-color: rgba(0, 128, 136, 0.4);
+    box-shadow: 0 0 0 4px rgba(0, 128, 136, 0.1);
     background: #ffffff;
     transform: translateY(-1px);
 }
@@ -406,12 +406,12 @@ body {
     cursor: pointer;
     margin-left: 5px;
     transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 128, 136, 0.3);
 }
 
 .send-btn:hover {
     transform: scale(1.08) translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 128, 136, 0.4);
 }
 
 .send-btn i {
