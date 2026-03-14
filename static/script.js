@@ -76,6 +76,15 @@ function setupUI(role) {
     // Build header nav links
     const headerNav = document.getElementById('header-nav');
     if (headerNav) {
+        // Home link (all users)
+        const homeLink = document.createElement('a');
+        homeLink.href = '/';
+        homeLink.innerHTML = '<i class="fas fa-home"></i> Home';
+        homeLink.style.cssText = 'color: var(--text-secondary); font-weight: 500; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; transition: color 0.2s, background 0.2s;';
+        homeLink.onmouseover = () => { homeLink.style.color = 'var(--text-primary)'; homeLink.style.background = 'rgba(0,0,0,0.05)'; };
+        homeLink.onmouseout = () => { homeLink.style.color = 'var(--text-secondary)'; homeLink.style.background = 'transparent'; };
+        headerNav.appendChild(homeLink);
+
         // Conversations link (all users)
         const convLink = document.createElement('a');
         convLink.href = '/conversations';
