@@ -469,6 +469,11 @@ body {
     border-color: var(--primary);
 }
 
+.form-group select option {
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
 /* Scrollbar formatting */
 ::-webkit-scrollbar {
     width: 6px;
@@ -511,6 +516,11 @@ html.dark-mode .form-group input, html.dark-mode .form-group textarea {
 }
 html.dark-mode .form-group select {
     background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+
+html.dark-mode .form-group select option {
+    background-color: #1e293b;
     color: #f8fafc;
 }
 html.dark-mode ::-webkit-scrollbar-thumb {

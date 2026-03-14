@@ -136,6 +136,11 @@ body {
     background-color: rgba(0, 0, 0, 0.08);
 }
 
+.input-group select option {
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
 .primary-btn {
     background: var(--primary);
     color: white;
@@ -175,6 +180,11 @@ html.dark-mode .input-group input:focus {
 }
 html.dark-mode .input-group select {
     background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+
+html.dark-mode .input-group select option {
+    background-color: #1e293b;
     color: #f8fafc;
 }
 html.dark-mode .login-container {
