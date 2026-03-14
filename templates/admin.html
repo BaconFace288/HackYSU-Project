@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealSpace - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+    <style>
+        body {
+            align-items: flex-start;
+            overflow-y: auto;
+            min-height: 100vh;
+            height: auto;
+        }
+
+        .admin-wrapper {
+            width: 95%;
+            max-width: 900px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Page Header */
+        .admin-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-header .icon-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #008088, #773585);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .admin-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .admin-header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .back-btn {
+            margin-left: auto;
+            background: rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .back-btn:hover { background: rgba(0,0,0,0.1); }
+        html.dark-mode .back-btn { background: rgba(255,255,255,0.05); }
+        html.dark-mode .back-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card .stat-icon {
+            font-size: 1.5rem;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Section */
+        .section-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .section-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* User Table */
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .user-table th {
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-table td {
+            padding: 0.9rem 1.5rem;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-table tr:last-child td { border-bottom: none; }
+
+        .user-table tr:hover td {
+            background: rgba(0,0,0,0.02);
+        }
+        html.dark-mode .user-table tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .user-avatar-sm {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        /* Role Badges */
+        .role-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .role-admin { background: rgba(119, 53, 133, 0.15); color: #773585; border: 1px solid rgba(119, 53, 133, 0.3); }
+        .role-therapist { background: rgba(0, 128, 136, 0.12); color: #008088; border: 1px solid rgba(0, 128, 136, 0.3); }
+        .role-user { background: rgba(0,0,0,0.05); color: var(--text-secondary); border: 1px solid var(--border); }
+
+        html.dark-mode .role-user { background: rgba(255,255,255,0.05); }
+
+        /* Role Selector */
+        .role-selector {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+        }
+        .role-selector:focus { border-color: var(--primary); }
+
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-btn:hover { background: var(--primary-hover); }
+
+        /* Post Table */
+        .post-table { width: 100%; border-collapse: collapse; }
+        .post-table th {
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+        .post-table td {
+            padding: 0.9rem 1.5rem;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .post-table tr:last-child td { border-bottom: none; }
+        .post-table tr:hover td { background: rgba(0,0,0,0.02); }
+        html.dark-mode .post-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover { background: rgba(239, 68, 68, 0.2); }
+
+        #access-denied {
+            text-align: center;
+            padding: 6rem 2rem;
+        }
+        #access-denied .icon { font-size: 4rem; margin-bottom: 1rem; }
+        #access-denied h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        #access-denied p { color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+
+<!-- Access Denied View (shown if not admin) -->
+<div id="access-denied" style="display:none; width: 100%; margin-top: 4rem;">
+    <div class="icon">🔒</div>
+    <h2>Access Denied</h2>
+    <p>You do not have permission to view this page.</p>
+    <button class="back-btn" style="margin: 1.5rem auto; display: inline-flex;" onclick="window.location.href='/'">
+        <i class="fas fa-arrow-left"></i> Back to Feed
+    </button>
+</div>
+
+<!-- Admin Content (hidden until role confirmed) -->
+<div class="admin-wrapper" id="admin-content" style="display:none;">
+
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="icon-badge"><i class="fas fa-shield-halved"></i></div>
+        <div>
+            <h1>Admin Panel</h1>
+            <p>Manage users, roles, and community posts</p>
+        </div>
+        <button class="back-btn" onclick="window.location.href='/'">
+            <i class="fas fa-arrow-left"></i> Back to Feed
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-icon">👥</span>
+            <span class="stat-value" id="stat-total-users">—</span>
+            <span class="stat-label">Total Users</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">🧠</span>
+            <span class="stat-value" id="stat-therapists">—</span>
+            <span class="stat-label">Certified Therapists</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">📋</span>
+            <span class="stat-value" id="stat-posts">—</span>
+            <span class="stat-label">Support Posts</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon">🛡️</span>
+            <span class="stat-value" id="stat-admins">—</span>
+            <span class="stat-label">Admins</span>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="section-card">
+        <div class="section-card-header">
+            <h2><i class="fas fa-users" style="color: var(--primary); margin-right:8px;"></i>User Management</h2>
+        </div>
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
+                    <th>Change Role</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                <tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding: 2rem;">Loading users...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Community Posts Management -->
+    <div class="section-card">
+        <div class="section-card-header">
+            <h2><i class="fas fa-clipboard-list" style="color: var(--primary); margin-right:8px;"></i>Community Posts</h2>
+        </div>
+        <table class="post-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Posted By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="posts-table-body">
+                <tr><td colspan="3" style="text-align:center; color:var(--text-secondary); padding: 2rem;">Loading posts...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script type="module">
+    import { auth, db } from '/static/firebase.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import {
+        collection,
+        getDocs,
+        doc,
+        getDoc,
+        updateDoc,
+        deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // ---- Auth Guard: Only admins may enter ----
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            window.location.href = '/login';
+            return;
+        }
+
+        const userRef = doc(db, "users", user.uid);
+        const snap = await getDoc(userRef);
+
+        if (!snap.exists() || snap.data().role !== "admin") {
+            document.getElementById('access-denied').style.display = 'block';
+            return;
+        }
+
+        // Access granted — load admin panel
+        document.getElementById('admin-content').style.display = 'flex';
+        loadStats();
+        loadUsers();
+        loadPosts();
+    });
+
+    // ---- Load Stats ----
+    async function loadStats() {
+        const usersSnap = await getDocs(collection(db, "users"));
+        const postsSnap = await getDocs(collection(db, "posts"));
+
+        const users = usersSnap.docs.map(d => d.data());
+        const admins = users.filter(u => u.role === "admin").length;
+        const therapists = users.filter(u => u.role === "Certified Therapist").length;
+
+        document.getElementById('stat-total-users').textContent = users.length;
+        document.getElementById('stat-admins').textContent = admins;
+        document.getElementById('stat-therapists').textContent = therapists;
+        document.getElementById('stat-posts').textContent = postsSnap.size;
+    }
+
+    // ---- Load Users Table ----
+    async function loadUsers() {
+        const tbody = document.getElementById('users-table-body');
+        const snap = await getDocs(collection(db, "users"));
+
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding: 2rem;">No users found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        snap.forEach(docSnap => {
+            const u = docSnap.data();
+            const uid = docSnap.id;
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName || 'U')}&background=008088&color=fff&rounded=true`;
+            const badgeClass = u.role === "admin" ? "role-admin" : u.role === "Certified Therapist" ? "role-therapist" : "role-user";
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <img class="user-avatar-sm" src="${avatarUrl}" alt="${u.displayName}">
+                    ${u.displayName || 'Unknown'}
+                </td>
+                <td style="color: var(--text-secondary)">${u.email || '—'}</td>
+                <td><span class="role-badge ${badgeClass}">${u.role || 'user'}</span></td>
+                <td>
+                    <select class="role-selector" id="role-select-${uid}">
+                        <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                        <option value="Certified Therapist" ${u.role === 'Certified Therapist' ? 'selected' : ''}>Certified Therapist</option>
+                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    </select>
+                    <button class="action-btn" style="margin-left: 8px;" onclick="saveRole('${uid}')">Save</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ---- Save Role ----
+    window.saveRole = async function(uid) {
+        const select = document.getElementById(`role-select-${uid}`);
+        const newRole = select.value;
+        try {
+            await updateDoc(doc(db, "users", uid), { role: newRole });
+            loadUsers(); // Refresh
+            loadStats();
+        } catch (e) {
+            alert("Failed to update role: " + e.message);
+        }
+    };
+
+    // ---- Load Posts Table ----
+    async function loadPosts() {
+        const tbody = document.getElementById('posts-table-body');
+        const snap = await getDocs(collection(db, "posts"));
+
+        if (snap.empty) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-secondary); padding: 2rem;">No posts found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        snap.forEach(docSnap => {
+            const p = docSnap.data();
+            const postId = docSnap.id;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.title || 'Untitled'}</td>
+                <td style="color: var(--text-secondary)">${p.hostName || '—'}</td>
+                <td>
+                    <button class="delete-btn" onclick="deletePost('${postId}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ---- Delete Post ----
+    window.deletePost = async function(postId) {
+        if (!confirm("Are you sure you want to delete this post?")) return;
+        try {
+            await deleteDoc(doc(db, "posts", postId));
+            loadPosts();
+            loadStats();
+        } catch (e) {
+            alert("Failed to delete post: " + e.message);
+        }
+    };
+</script>
+</body>
+</html>

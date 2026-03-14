@@ -1,9 +1,44 @@
-import { auth } from './firebase.js';
+import { auth, db } from './firebase.js';
 import { 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
     updateProfile 
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+import {
+    doc,
+    getDoc,
+    setDoc
+} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+// Admins are auto-promoted by display name on first login (Hackathon approach)
+const ADMIN_NAMES = ["BaconFace288"];
+
+// Creates or ensures a user profile doc exists in Firestore
+async function ensureUserDoc(user) {
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+
+    if (!snap.exists()) {
+        // New user — determine their initial role
+        let role = "user";
+        if (ADMIN_NAMES.includes(user.displayName)) {
+            role = "admin";
+        }
+        await setDoc(userRef, {
+            uid: user.uid,
+            displayName: user.displayName || "Anonymous",
+            email: user.email,
+            role: role,
+            createdAt: Date.now()
+        });
+    } else {
+        // Existing user — auto-promote by name if they were added to ADMIN_NAMES later
+        const data = snap.data();
+        if (ADMIN_NAMES.includes(user.displayName) && data.role !== "admin") {
+            await setDoc(userRef, { ...data, role: "admin" });
+        }
+    }
+}
 
 // Expose these to global window object so our HTML inline onclick events still work
 window.switchTab = function(tab) {
@@ -47,7 +82,9 @@ window.handleLogin = async function(e) {
     const password = document.getElementById('login-password').value;
 
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // Ensure their Firestore profile exists and check for admin promotion
+        await ensureUserDoc(userCredential.user);
         window.location.href = '/';
     } catch (err) {
         let errorMsg = 'Login failed. Please verify credentials.';
@@ -60,8 +97,8 @@ window.handleLogin = async function(e) {
 
 window.handleRegister = async function(e) {
     e.preventDefault();
-    const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
 
     try {
@@ -70,6 +107,9 @@ window.handleRegister = async function(e) {
         await updateProfile(userCredential.user, {
             displayName: username
         });
+
+        // Create the Firestore user profile with role
+        await ensureUserDoc({ ...userCredential.user, displayName: username });
         
         showSuccess('Account created! You can now log in.');
         document.getElementById('reg-username').value = '';

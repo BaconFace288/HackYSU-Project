@@ -7,7 +7,8 @@ import {
     orderBy, 
     onSnapshot,
     serverTimestamp,
-    doc
+    doc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // DOM Elements
@@ -26,28 +27,58 @@ let currentRoomId = null;
 let unsubscribeMessages = null;
 
 // =========== Auth Check & Init ===========
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        setupUI();
+        // Fetch the user's role from Firestore
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        const role = userSnap.exists() ? userSnap.data().role : "user";
+        setupUI(role);
         listenForPosts(); // Load the Community Feed immediately
     } else {
         window.location.href = '/login';
     }
 });
 
-function setupUI() {
+function setupUI(role) {
+    // Role-aware avatar color
+    const bgColor = role === 'admin' ? '773585' : role === 'Certified Therapist' ? '008088' : '475569';
+
     // Update user avatar in UI to match their real username
     const avatarImg = document.querySelector(".avatar img");
     if(avatarImg && currentUser.displayName) {
-        avatarImg.src = `https://ui-avatars.com/api/?name=${currentUser.displayName}&background=6366f1&color=fff&rounded=true`;
+        avatarImg.src = `https://ui-avatars.com/api/?name=${currentUser.displayName}&background=${bgColor}&color=fff&rounded=true`;
     }
     const userNameSpan = document.querySelector(".user-info h3");
     if(userNameSpan && currentUser.displayName) {
         userNameSpan.textContent = currentUser.displayName;
     }
+
+    // Add role badge next to username
+    if (role === 'admin' || role === 'Certified Therapist') {
+        const badgeEl = document.createElement('span');
+        badgeEl.textContent = role === 'admin' ? '🛡️ Admin' : '🧠 Therapist';
+        badgeEl.style.cssText = `font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+            background: ${ role === 'admin' ? 'rgba(119,53,133,0.15)' : 'rgba(0,128,136,0.12)' };
+            color: ${ role === 'admin' ? '#773585' : '#008088' };
+            border: 1px solid ${ role === 'admin' ? 'rgba(119,53,133,0.3)' : 'rgba(0,128,136,0.3)' };
+            margin-left: 6px;`;
+        if (userNameSpan) userNameSpan.parentElement.appendChild(badgeEl);
+    }
     
-    // Add logout button functionality
+    // Show admin panel link in header for admins
+    if (role === 'admin') {
+        const header = document.querySelector('.app-header');
+        const adminLink = document.createElement('a');
+        adminLink.href = '/admin';
+        adminLink.innerHTML = '<i class="fas fa-shield-halved"></i> Admin';
+        adminLink.style.cssText = 'color: #773585; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(119,53,133,0.3); background: rgba(119,53,133,0.08); transition: background 0.2s;';
+        adminLink.onmouseover = () => adminLink.style.background = 'rgba(119,53,133,0.16)';
+        adminLink.onmouseout = () => adminLink.style.background = 'rgba(119,53,133,0.08)';
+        if (header) header.insertBefore(adminLink, header.querySelector('.user-profile'));
+    }
+    
+    // Profile click → settings
     const userProfile = document.querySelector(".user-profile");
     if(userProfile) {
         userProfile.style.cursor = 'pointer';
