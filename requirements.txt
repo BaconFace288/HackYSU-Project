@@ -4,3 +4,5 @@ sqlalchemy
 passlib[bcrypt]
 pyjwt
 python-multipart
+google-generativeai
+httpx
