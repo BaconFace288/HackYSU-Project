@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealSpace - Welcome</title>
+    <link rel="icon" type="image/png" href="/static/logo_leaf.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Apply theme immediately on load to prevent flash
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+
+        /* Top Navigation Navbar */
+        .landing-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(var(--bg), 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .landing-nav .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .landing-nav .brand-icon {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .landing-nav h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #008088 0%, #773585 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a.link {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a.link:hover {
+            color: var(--text-primary);
+        }
+
+        .primary-cta {
+            background: linear-gradient(135deg, #008088, #773585);
+            color: white !important;
+            padding: 0.6rem 1.4rem;
+            border-radius: 20px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 128, 136, 0.3);
+        }
+
+        .primary-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(119, 53, 133, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 2rem;
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at top right, rgba(0, 128, 136, 0.08), transparent 50%),
+                        radial-gradient(circle at bottom left, rgba(119, 53, 133, 0.08), transparent 50%);
+        }
+
+        .hero h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            max-width: 800px;
+            color: var(--text-primary);
+            animation: fadeInDown 0.8s ease-out forwards;
+        }
+
+        .hero-highlight {
+            background: linear-gradient(135deg, #008088 0%, #773585 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+            animation: fadeIn 1s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            animation: fadeInUp 0.8s ease-out 0.6s forwards;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary-large {
+            background: linear-gradient(135deg, #008088, #773585);
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 128, 136, 0.3);
+        }
+
+        .btn-primary-large:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(119, 53, 133, 0.4);
+        }
+
+        .btn-secondary-large {
+            background: rgba(var(--bg), 0.5);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary-large:hover {
+            background: rgba(0, 128, 136, 0.1);
+            border-color: #008088;
+            color: #008088;
+            transform: translateY(-3px);
+        }
+
+        /* Abstract shapes */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .shape-1 {
+            background: rgba(0, 128, 136, 0.4);
+            width: 300px;
+            height: 300px;
+            top: -10%;
+            right: -5%;
+        }
+
+        .shape-2 {
+            background: rgba(119, 53, 133, 0.4);
+            width: 400px;
+            height: 400px;
+            bottom: -15%;
+            left: -10%;
+        }
+
+        /* Information Sections */
+        .info-section {
+            padding: 5rem 2rem;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+        }
+
+        .info-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .info-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .info-header h3 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .info-header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            border-color: rgba(0, 128, 136, 0.4);
+        }
+
+        html.dark-mode .feature-card:hover {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .icon-blue {
+            background: rgba(0, 128, 136, 0.15);
+            color: #008088;
+        }
+        .icon-purple {
+            background: rgba(119, 53, 133, 0.15);
+            color: #773585;
+        }
+        .icon-green {
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+
+        .feature-card h4 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Two-column layout */
+        .split-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            padding: 5rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .split-content h3 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            line-height: 1.3;
+        }
+
+        .split-content p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .split-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem 0;
+        }
+
+        .split-content li {
+            font-size: 1.05rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .split-content li i {
+            color: #008088;
+            font-size: 1.2rem;
+        }
+
+        /* Registration steps */
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .step {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 128, 136, 0.3);
+        }
+
+        .step-content h5 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-content p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .therapist-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(119, 53, 133, 0.1);
+            color: #773585;
+            border: 1px solid rgba(119, 53, 133, 0.3);
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        footer p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        footer .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        footer .brand-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 900px) {
+            .split-section {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 3rem 2rem;
+            }
+            
+            .hero h2 { font-size: 2.5rem; }
+            
+            .info-header h3 { font-size: 2rem; }
+            
+            .image-wrapper { order: -1; } /* Image on top for mobile */
+        }
+
+        @media (max-width: 600px) {
+            .nav-links a.link { display: none; }
+            .hero-buttons { flex-direction: column; width: 100%; max-width: 300px; }
+            .btn-large { justify-content: center; }
+        }
+
+        /* Glassmorphism image wrapper */
+        .glass-image {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 1rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            transform: perspective(1000px) rotateY(-5deg);
+            transition: transform 0.5s;
+        }
+
+        .glass-image:hover {
+            transform: perspective(1000px) rotateY(0deg) scale(1.02);
+        }
+
+        img.app-screenshot {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+            background: var(--bg);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="landing-nav">
+        <a href="/" class="brand">
+            <img src="/static/logo_leaf.png" alt="HealSpace Icon" class="brand-icon">
+            <h1>HealSpace</h1>
+        </a>
+        <div class="nav-links">
+            <a href="#about" class="link">About</a>
+            <a href="#therapists" class="link">For Therapists</a>
+            <a href="/login" class="link">Log In</a>
+            <a href="/login" class="primary-cta">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        
+        <h2>A safe space for <span class="hero-highlight">peer support</span> and mental wellness.</h2>
+        <p>Connect with a compassionate community and certified therapists. Share your struggles, offer advice, or just listen. You are never alone on HealSpace.</p>
+        
+        <div class="hero-buttons">
+            <a href="/login" class="btn-large btn-primary-large">
+                <i class="fas fa-heart"></i> Join Community
+            </a>
+            <a href="#therapists" class="btn-large btn-secondary-large">
+                Apply as Therapist <i class="fas fa-arrow-down"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- What is HealSpace Section -->
+    <section id="about" class="info-section">
+        <div class="info-container">
+            <div class="info-header">
+                <h3>What is HealSpace?</h3>
+                <p>We built this platform to lower the barrier to mental health support, creating an environment where everyone can find someone who understands.</p>
+            </div>
+
+            <div class="cards-grid">
+                <!-- Card 1 -->
+                <div class="feature-card">
+                    <div class="card-icon icon-blue">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h4>Community Groups</h4>
+                    <p>Post anonymously about what you're going through. Anyone can volunteer to host a group chat to talk about your topic, offer advice, or simply provide a listening ear.</p>
+                </div>
+                
+                <!-- Card 2 -->
+                <div class="feature-card">
+                    <div class="card-icon icon-purple">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4>HealBot AI Companion</h4>
+                    <p>Our 24/7 AI support assistant is always ready to listen, provide coping strategies, and chat with you securely without judgment.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="feature-card">
+                    <div class="card-icon icon-green">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h4>Certified Professionals</h4>
+                    <p>Look for the green Therapist badge. Certified professionals regularly host sessions to offer specialized, expert guidance to the community.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Registration Flow -->
+    <section class="info-section" style="background: rgba(0, 128, 136, 0.03);">
+        <div class="split-section">
+            <div class="image-wrapper glass-image">
+                <!-- We can just use an icon or stylized graphic if real screenshots aren't available -->
+                <div style="padding: 3rem 1rem; text-align: center; border-radius: 12px; background: rgba(0,0,0,0.02); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px dashed var(--border);">
+                    <i class="fas fa-user-plus" style="font-size: 5rem; color: #008088; margin-bottom: 1rem; opacity: 0.8;"></i>
+                    <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Join in 2 Minutes</h3>
+                    <p style="color: var(--text-secondary);">Minimal information required to protect your privacy.</p>
+                </div>
+            </div>
+            
+            <div class="split-content">
+                <h3>Join our supportive community today</h3>
+                <p>It takes less than two minutes to get started. Navigate your mental wellness journey with peers who truly understand.</p>
+                
+                <div class="steps-container">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>Create an Account</h5>
+                            <p>Click "Get Started", enter your email, and pick an anonymous display name.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>Explore the Feed</h5>
+                            <p>Read through community requests or create your own post to talk about your struggles.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h5>Join a Conversation</h5>
+                            <p>Jump into an active chat room and start connecting with others instantly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="/login" class="btn-large btn-primary-large" style="margin-top: 2rem; display: inline-flex; width: max-content;">
+                    Register Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Therapist Registration Flow -->
+    <section id="therapists" class="info-section">
+        <div class="split-section">
+            <div class="split-content">
+                <div class="therapist-badge">
+                    <i class="fas fa-brain"></i> For Licensed Professionals
+                </div>
+                <h3>Lend your expertise to those in need</h3>
+                <p>We are actively seeking licensed clinical social workers, psychologists, and counselors to volunteer their time moderating group chats and helping users.</p>
+                
+                <ul style="margin-top: 1.5rem;">
+                    <li><i class="fas fa-check-circle"></i> <strong>Exclusive Badge:</strong> Stand out to users as a verified expert.</li>
+                    <li><i class="fas fa-check-circle"></i> <strong>Host Priority:</strong> Claim and host priority support chats.</li>
+                    <li><i class="fas fa-check-circle"></i> <strong>Give Back:</strong> Help lower the barrier to mental health care.</li>
+                </ul>
+                
+                <div style="background: rgba(234, 179, 8, 0.1); border-left: 4px solid #ca8a04; padding: 1rem; border-radius: 0 10px 10px 0; margin-top: 2rem;">
+                    <strong style="color: #b45309; display: block; margin-bottom: 0.5rem;">How to apply:</strong>
+                    <ol style="color: var(--text-secondary); padding-left: 1.2rem; margin: 0; line-height: 1.6;">
+                        <li>Create a standard User Account first via the Login page.</li>
+                        <li>Navigate to your <strong>Settings</strong> page via the top right corner.</li>
+                        <li>Scroll down to the <strong>"Therapist Verification"</strong> section.</li>
+                        <li>Upload copies of your Degree and Government ID for verification.</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="image-wrapper glass-image" style="transform: perspective(1000px) rotateY(5deg);">
+                 <div style="padding: 3rem 1rem; text-align: center; border-radius: 12px; background: rgba(0,0,0,0.02); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px dashed var(--border);">
+                    <i class="fas fa-certificate" style="font-size: 5rem; color: #773585; margin-bottom: 1rem; opacity: 0.8;"></i>
+                    <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Secure Verification</h3>
+                    <p style="color: var(--text-secondary);">Your documents are safely reviewed by admin personnel only.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <a href="#" class="brand">
+            <img src="/static/logo_leaf.png" alt="HealSpace Icon" class="brand-icon">
+            HealSpace
+        </a>
+        <p>A global chat room for peer mental health support.</p>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 1rem;">© 2026 HealSpace. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

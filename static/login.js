@@ -85,7 +85,7 @@ window.handleLogin = async function(e) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         // Ensure their Firestore profile exists and check for admin promotion
         await ensureUserDoc(userCredential.user);
-        window.location.href = '/';
+        window.location.href = '/app';
     } catch (err) {
         let errorMsg = 'Login failed. Please verify credentials.';
         if (err.code === 'auth/invalid-credential') {
