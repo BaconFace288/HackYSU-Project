@@ -258,6 +258,150 @@
         #access-denied .icon { font-size: 4rem; margin-bottom: 1rem; }
         #access-denied h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
         #access-denied p { color: var(--text-secondary); }
+
+        /* Crisis Alerts */
+        .crisis-panel {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1.5px solid rgba(239, 68, 68, 0.35);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .crisis-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.06);
+        }
+
+        .crisis-panel-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ef4444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crisis-count-badge {
+            background: #ef4444;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        .crisis-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .crisis-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.12);
+            animation: crisisSlideIn 0.4s ease;
+        }
+
+        .crisis-alert:last-child { border-bottom: none; }
+
+        @keyframes crisisSlideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .crisis-alert-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .crisis-alert-body {
+            flex: 1;
+        }
+
+        .crisis-alert-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+        }
+
+        .crisis-user {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .crisis-room {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .crisis-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .crisis-message {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+            word-break: break-word;
+            margin-bottom: 8px;
+        }
+
+        .crisis-message .trigger-word {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            font-weight: 700;
+            border-radius: 4px;
+            padding: 0 3px;
+        }
+
+        .dismiss-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dismiss-btn:hover {
+            background: rgba(0,0,0,0.05);
+            color: var(--text-primary);
+        }
+        html.dark-mode .dismiss-btn:hover { background: rgba(255,255,255,0.08); }
+
+        .crisis-empty {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -308,6 +452,26 @@
             <span class="stat-icon">🛡️</span>
             <span class="stat-value" id="stat-admins">—</span>
             <span class="stat-label">Admins</span>
+        </div>
+        <div class="stat-card" style="border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.05);">
+            <span class="stat-icon">🚨</span>
+            <span class="stat-value" id="stat-flags" style="color:#ef4444;">—</span>
+            <span class="stat-label">Active Crisis Flags</span>
+        </div>
+    </div>
+
+    <!-- CRISIS ALERTS (always shown first) -->
+    <div class="crisis-panel">
+        <div class="crisis-panel-header">
+            <h2>
+                <i class="fas fa-triangle-exclamation"></i>
+                Crisis Alerts
+                <span class="crisis-count-badge" id="crisis-count">0</span>
+            </h2>
+            <span style="font-size: 0.82rem; color: var(--text-secondary);">Real-time • Auto-updates</span>
+        </div>
+        <div class="crisis-list" id="crisis-list">
+            <div class="crisis-empty">✅ No active crisis alerts. All clear!</div>
         </div>
     </div>
 
@@ -361,7 +525,11 @@
         doc,
         getDoc,
         updateDoc,
-        deleteDoc
+        deleteDoc,
+        onSnapshot,
+        query,
+        where,
+        orderBy
     } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
     // ---- Auth Guard: Only admins may enter ----
@@ -384,6 +552,7 @@
         loadStats();
         loadUsers();
         loadPosts();
+        listenForCrisisAlerts(); // Real-time listener
     });
 
     // ---- Load Stats ----
@@ -399,6 +568,92 @@
         document.getElementById('stat-admins').textContent = admins;
         document.getElementById('stat-therapists').textContent = therapists;
         document.getElementById('stat-posts').textContent = postsSnap.size;
+    }
+
+    // ---- Real-time Crisis Alerts ----
+    function listenForCrisisAlerts() {
+        const q = query(
+            collection(db, "flaggedMessages"),
+            where("dismissed", "==", false),
+            orderBy("flaggedAt", "desc")
+        );
+
+        onSnapshot(q, (snapshot) => {
+            const list = document.getElementById('crisis-list');
+            const countBadge = document.getElementById('crisis-count');
+            const statFlags = document.getElementById('stat-flags');
+
+            if (snapshot.empty) {
+                list.innerHTML = '<div class="crisis-empty">✅ No active crisis alerts. All clear!</div>';
+                countBadge.textContent = '0';
+                statFlags.textContent = '0';
+                return;
+            }
+
+            countBadge.textContent = snapshot.size;
+            statFlags.textContent = snapshot.size;
+            list.innerHTML = '';
+
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                const flagId = docSnap.id;
+                const timeAgo = timeSince(d.flaggedAt);
+
+                // Highlight the trigger keyword in the message
+                const safeText = escapeHtml(d.text);
+                const highlightedText = safeText.replace(
+                    new RegExp(escapeRegex(d.triggerKeyword), 'gi'),
+                    match => `<span class="trigger-word">${match}</span>`
+                );
+
+                const alertEl = document.createElement('div');
+                alertEl.className = 'crisis-alert';
+                alertEl.innerHTML = `
+                    <div class="crisis-alert-icon">🚨</div>
+                    <div class="crisis-alert-body">
+                        <div class="crisis-alert-meta">
+                            <span class="crisis-user">${escapeHtml(d.displayName || 'Unknown')}</span>
+                            <span class="crisis-room">in <strong>${escapeHtml(d.roomTitle || 'Unknown Room')}</strong></span>
+                            <span class="crisis-time">${timeAgo}</span>
+                        </div>
+                        <div class="crisis-message">${highlightedText}</div>
+                        <button class="dismiss-btn" onclick="dismissAlert('${flagId}')">
+                            ✓ Mark as Resolved
+                        </button>
+                    </div>
+                `;
+                list.appendChild(alertEl);
+            });
+        }, (err) => {
+            console.error("Crisis listener error:", err);
+        });
+    }
+
+    window.dismissAlert = async function(flagId) {
+        try {
+            await updateDoc(doc(db, "flaggedMessages", flagId), { dismissed: true });
+        } catch (e) {
+            alert("Could not dismiss alert: " + e.message);
+        }
+    };
+
+    function timeSince(ts) {
+        const seconds = Math.floor((Date.now() - ts) / 1000);
+        if (seconds < 60) return 'just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        return `${hours}h ago`;
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     // ---- Load Users Table ----
