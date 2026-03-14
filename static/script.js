@@ -8,7 +8,9 @@ import {
     onSnapshot,
     serverTimestamp,
     doc,
-    getDoc
+    getDoc,
+    updateDoc,
+    arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // DOM Elements
@@ -287,6 +289,14 @@ window.sendMessage = async function(event) {
             displayName: currentUser.displayName,
             createdAt: Date.now()
         });
+
+        // Track this room in the user's participatedRooms for the Conversations tab
+        updateDoc(doc(db, "users", currentUser.uid), {
+            participatedRooms: arrayUnion({
+                id: currentRoomId,
+                title: roomTitleEl.textContent || 'Unnamed Room'
+            })
+        }).catch(() => {}); // Non-critical, ignore failures
 
         // ---- Crisis Detection ----
         const triggeredKeyword = checkForCrisisKeywords(text);

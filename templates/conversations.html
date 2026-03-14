@@ -127,6 +127,32 @@
             border: 1px solid rgba(239, 68, 68, 0.25);
         }
 
+        .inbox-group-badge {
+            background: rgba(0, 128, 136, 0.10);
+            color: #008088;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            white-space: nowrap;
+            border: 1px solid rgba(0, 128, 136, 0.25);
+        }
+
+        /* Section labels inside the inbox sidebar */
+        .inbox-section-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-secondary);
+            padding: 10px 1.25rem 6px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.02);
+        }
+        html.dark-mode .inbox-section-label {
+            background: rgba(255,255,255,0.02);
+        }
+
         /* ---- Right Panel: Chat Thread ---- */
         .thread-panel {
             flex: 1;
@@ -355,7 +381,13 @@
             <h2>Conversations</h2>
         </div>
         <div class="inbox-list" id="inbox-list">
-            <div class="inbox-empty">Loading conversations...</div>
+            <!-- Private conversations section -->
+            <div class="inbox-section-label" id="private-label" style="display:none;">💬 Private</div>
+            <div id="private-list"></div>
+            <!-- Group chats section -->
+            <div class="inbox-section-label" id="group-label" style="display:none;">👥 Group Chats</div>
+            <div id="group-list"></div>
+            <div class="inbox-empty" id="inbox-empty-msg">Loading conversations...</div>
         </div>
     </div>
 
@@ -424,47 +456,113 @@
 
     // ------ Load Inbox ------
     function loadInbox() {
+        // 1. Private conversations (real-time)
         const q = query(
             collection(db, "conversations"),
             where("participantUids", "array-contains", currentUser.uid)
         );
 
         onSnapshot(q, (snap) => {
-            const list = document.getElementById('inbox-list');
+            const privateList = document.getElementById('private-list');
+            const privateLabel = document.getElementById('private-label');
+            const emptyMsg = document.getElementById('inbox-empty-msg');
+
             if (snap.empty) {
-                list.innerHTML = '<div class="inbox-empty">No conversations yet.<br><small>Admins can start a conversation with you from the crisis alerts panel.</small></div>';
-                return;
+                privateList.innerHTML = '';
+                privateLabel.style.display = 'none';
+            } else {
+                privateLabel.style.display = 'block';
+                const convs = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                privateList.innerHTML = '';
+                convs.forEach(conv => {
+                    const otherName = conv.adminUid === currentUser.uid ? conv.userName : conv.adminName;
+                    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName || 'U')}&background=773585&color=fff&rounded=true`;
+                    const isActive = conv.id === activeConvId;
+
+                    const item = document.createElement('div');
+                    item.className = `inbox-item ${isActive ? 'active' : ''}`;
+                    item.dataset.convId = conv.id;
+                    item.onclick = () => openConversation(conv.id);
+                    item.innerHTML = `
+                        <img class="inbox-avatar" src="${avatarUrl}" alt="${otherName}">
+                        <div class="inbox-item-info">
+                            <div class="inbox-item-name">${otherName || 'Unknown'}</div>
+                            <div class="inbox-item-preview">${conv.lastMessage || 'No messages yet'}</div>
+                        </div>
+                        ${conv.fromCrisis ? '<span class="inbox-crisis-badge">🚨 Crisis</span>' : ''}
+                    `;
+                    privateList.appendChild(item);
+                });
             }
 
-            // Sort by most recent
-            const convs = snap.docs
-                .map(d => ({ id: d.id, ...d.data() }))
-                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-            list.innerHTML = '';
-            convs.forEach(conv => {
-                const otherName = conv.adminUid === currentUser.uid ? conv.userName : conv.adminName;
-                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName || 'U')}&background=773585&color=fff&rounded=true`;
-                const isActive = conv.id === activeConvId;
-
-                const item = document.createElement('div');
-                item.className = `inbox-item ${isActive ? 'active' : ''}`;
-                item.dataset.convId = conv.id;
-                item.onclick = () => openConversation(conv.id);
-                item.innerHTML = `
-                    <img class="inbox-avatar" src="${avatarUrl}" alt="${otherName}">
-                    <div class="inbox-item-info">
-                        <div class="inbox-item-name">${otherName || 'Unknown'}</div>
-                        <div class="inbox-item-preview">${conv.lastMessage || 'No messages yet'}</div>
-                    </div>
-                    ${conv.fromCrisis ? '<span class="inbox-crisis-badge">🚨 Crisis</span>' : ''}
-                `;
-                list.appendChild(item);
-            });
+            // Show/hide the empty state
+            checkIfEmpty();
         });
+
+        // 2. Group chats the user has participated in (one-time fetch from user doc)
+        loadGroupChats();
     }
 
-    // ------ Open a Conversation ------
+    async function loadGroupChats() {
+        const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+        if (!userSnap.exists()) return;
+        const rooms = userSnap.data().participatedRooms || [];
+
+        const groupList = document.getElementById('group-list');
+        const groupLabel = document.getElementById('group-label');
+
+        if (rooms.length === 0) {
+            groupList.innerHTML = '';
+            groupLabel.style.display = 'none';
+            checkIfEmpty();
+            return;
+        }
+
+        groupLabel.style.display = 'block';
+        groupList.innerHTML = '';
+
+        // Deduplicate rooms by id (arrayUnion can have duplicates if title changed)
+        const seen = new Set();
+        const uniqueRooms = rooms.filter(r => {
+            if (seen.has(r.id)) return false;
+            seen.add(r.id); return true;
+        });
+
+        uniqueRooms.forEach(room => {
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(room.title || 'Room')}&background=008088&color=fff&rounded=true`;
+            const isActive = `group-${room.id}` === activeConvId;
+
+            const item = document.createElement('div');
+            item.className = `inbox-item ${isActive ? 'active' : ''}`;
+            item.dataset.convId = `group-${room.id}`;
+            item.onclick = () => openGroupRoom(room.id, room.title);
+            item.innerHTML = `
+                <img class="inbox-avatar" src="${avatarUrl}" alt="${room.title}" style="border-radius: 10px;">
+                <div class="inbox-item-info">
+                    <div class="inbox-item-name">${room.title || 'Unnamed Room'}</div>
+                    <div class="inbox-item-preview">Group support chat</div>
+                </div>
+                <span class="inbox-group-badge">👥 Group</span>
+            `;
+            groupList.appendChild(item);
+        });
+
+        checkIfEmpty();
+    }
+
+    function checkIfEmpty() {
+        const hasPrivate = document.getElementById('private-list').children.length > 0;
+        const hasGroup = document.getElementById('group-list').children.length > 0;
+        document.getElementById('inbox-empty-msg').style.display = (hasPrivate || hasGroup) ? 'none' : 'block';
+        if (!hasPrivate && !hasGroup) {
+            document.getElementById('inbox-empty-msg').textContent = 'No conversations yet. Join a group chat or wait for an admin to reach out.';
+        }
+    }
+
+    // ------ Open a Private Conversation ------
     window.openConversation = async function(convId) {
         activeConvId = convId;
 
@@ -519,6 +617,81 @@
             });
         }, err => console.error("Message listener error:", err));
     };
+
+    // ------ Open a Group Room ------
+    window.openGroupRoom = async function(roomId, title) {
+        activeConvId = `group-${roomId}`;
+
+        document.querySelectorAll('.inbox-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.convId === `group-${roomId}`);
+        });
+
+        if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(title || 'Room')}&background=008088&color=fff&rounded=true`;
+
+        document.getElementById('thread-empty').style.display = 'none';
+        document.getElementById('thread-content').style.display = 'flex';
+        document.getElementById('crisis-banner').style.display = 'none';
+
+        document.getElementById('thread-header').innerHTML = `
+            <img class="thread-header-avatar" src="${avatarUrl}" alt="${title}" style="border-radius: 10px;">
+            <div class="thread-header-info">
+                <h3>${title || 'Group Chat'}</h3>
+                <p>👥 Group support chat &nbsp;•&nbsp;
+                    <a href="/" style="color: var(--primary); text-decoration:none;">Rejoin on feed →</a>
+                </p>
+            </div>
+        `;
+
+        // Rewire the form for group sending
+        const form = document.getElementById('thread-form');
+        form.style.display = 'flex';
+        document.getElementById('conv-input').placeholder = `Message in ${title}...`;
+        form.onsubmit = (e) => sendGroupMessage(e, roomId);
+
+        const msgContainer = document.getElementById('thread-messages');
+        msgContainer.innerHTML = '';
+
+        const msgQuery = query(
+            collection(db, "posts", roomId, "messages"),
+            orderBy("createdAt", "asc")
+        );
+
+        unsubMessages = onSnapshot(msgQuery, (snap) => {
+            snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const d = change.doc.data();
+                    renderMessage({
+                        text: d.text,
+                        senderUid: d.uid,
+                        senderName: d.displayName,
+                        senderRole: d.role || 'user',
+                        createdAt: d.createdAt
+                    });
+                }
+            });
+        }, err => console.error("Group room listener:", err));
+    };
+
+    async function sendGroupMessage(e, roomId) {
+        e.preventDefault();
+        const input = document.getElementById('conv-input');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        try {
+            await addDoc(collection(db, "posts", roomId, "messages"), {
+                text,
+                uid: currentUser.uid,
+                displayName: currentUser.displayName || 'Anonymous',
+                role: currentUserRole,
+                createdAt: Date.now()
+            });
+        } catch (err) {
+            console.error("Group send error:", err);
+        }
+    }
 
     // ------ Render a Message ------
     function renderMessage(data) {
