@@ -126,6 +126,10 @@ async def get_admin(request: StarletteRequest):
 async def get_conversations(request: StarletteRequest):
     return templates.TemplateResponse("conversations.html", {"request": request})
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/app", response_class=HTMLResponse)
 async def get_index(request: StarletteRequest):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/", response_class=HTMLResponse)
+async def get_landing(request: StarletteRequest):
+    return templates.TemplateResponse("landing.html", {"request": request})
