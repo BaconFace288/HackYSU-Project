@@ -25,6 +25,7 @@ const roomTitleEl = document.getElementById('room-title');
 const roomHostEl = document.getElementById('room-host');
 
 let currentUser = null;
+let currentUserRole = 'user'; // persisted after auth
 let currentRoomId = null;
 let unsubscribeMessages = null;
 
@@ -35,6 +36,7 @@ onAuthStateChanged(auth, async (user) => {
         // Fetch the user's role from Firestore
         const userSnap = await getDoc(doc(db, "users", user.uid));
         const role = userSnap.exists() ? userSnap.data().role : "user";
+        currentUserRole = role; // store globally
         setupUI(role);
         listenForPosts(); // Load the Community Feed immediately
     } else {
@@ -121,25 +123,57 @@ function listenForPosts() {
         }
 
         snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
             const postId = docSnap.id;
-            
-            // Build the card
+            const data = docSnap.data();
+            const isPending = data.status === 'pending';
+            const canHost = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
+
             const card = document.createElement('div');
-            card.className = 'post-card';
-            card.onclick = () => window.openRoom(postId, data.title, data.hostName);
-            
-            card.innerHTML = `
-                <h3>${data.title}</h3>
-                <p>${data.description}</p>
-                <div class="post-meta">
-                    <span class="host-name">
-                        <i class="fas fa-user-circle"></i> ${data.hostName}
-                    </span>
-                    <span>Click to join chat →</span>
-                </div>
-            `;
-            
+            card.classList.add('post-card');
+            card.dataset.postId = postId;
+
+            if (isPending) {
+                // Locked card — can't be joined yet
+                card.style.cssText = 'cursor: default; opacity: 0.85;';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 6px;">
+                        <h3 style="margin:0;">${data.title}</h3>
+                        <span style="font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:20px;
+                            background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3); white-space:nowrap;">
+                            🔒 Waiting for Host
+                        </span>
+                    </div>
+                    <p>${data.description}</p>
+                    <div class="post-meta">
+                        <span class="host-name">
+                            <i class="fas fa-user-circle"></i> ${data.hostName || 'Anonymous'}
+                        </span>
+                        ${ canHost
+                            ? `<button onclick="window.hostPost('${postId}', event)"
+                                style="background: linear-gradient(135deg,#773585,#008088); color:white; border:none;
+                                        padding:6px 14px; border-radius:8px; font-size:0.85rem; font-weight:600;
+                                        cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                    🛡️ Host this Chat
+                               </button>`
+                            : `<span style="color:var(--text-secondary); font-size:0.85rem;">Waiting for an admin or therapist to host</span>`
+                        }
+                    </div>
+                `;
+            } else {
+                // Active card — joinable by anyone
+                card.onclick = () => window.openRoom(postId, data.title, data.hostName);
+                card.innerHTML = `
+                    <h3>${data.title}</h3>
+                    <p>${data.description}</p>
+                    <div class="post-meta">
+                        <span class="host-name">
+                            <i class="fas fa-user-circle"></i> ${data.hostName}
+                        </span>
+                        <span>Click to join chat →</span>
+                    </div>
+                `;
+            }
+
             feedContainer.appendChild(card);
         });
     }, (error) => {
@@ -176,22 +210,47 @@ window.submitPost = async function(event) {
     submitBtn.textContent = 'Posting...';
     submitBtn.disabled = true;
 
+    // Admins and therapists can start active rooms immediately;
+    // regular users must wait for a host to volunteer.
+    const isPrivileged = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
+    const status = isPrivileged ? 'active' : 'pending';
+
     try {
         await addDoc(collection(db, "posts"), {
             title: title,
             description: desc,
-            hostName: currentUser.displayName || 'Anonymous',
-            hostUid: currentUser.uid,
+            hostName: isPrivileged ? (currentUser.displayName || 'Anonymous') : null,
+            hostUid: isPrivileged ? currentUser.uid : null,
+            creatorName: currentUser.displayName || 'Anonymous',
+            creatorUid: currentUser.uid,
+            status: status,
             createdAt: Date.now()
         });
         
         window.closeCreateModal();
+        if (!isPrivileged) {
+            alert('✅ Your support request has been posted! A therapist or admin will volunteer to host it shortly.');
+        }
     } catch (e) {
         console.error("Error creating post: ", e);
         alert("Failed to post: " + e.message);
     } finally {
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
+    }
+}
+
+// Admin/Therapist volunteers to host a pending post
+window.hostPost = async function(postId, event) {
+    event.stopPropagation(); // don't let it bubble to the card
+    try {
+        await updateDoc(doc(db, "posts", postId), {
+            hostName: currentUser.displayName || 'Host',
+            hostUid: currentUser.uid,
+            status: 'active'
+        });
+    } catch (e) {
+        alert("Failed to accept hosting: " + e.message);
     }
 }
 
