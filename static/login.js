@@ -63,6 +63,21 @@ window.switchTab = function(tab) {
     }
 }
 
+window.togglePassword = function(inputId, icon) {
+    const passwordInput = document.getElementById(inputId);
+    if (!passwordInput) return;
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    }
+}
+
 function showError(msg) {
     const errDiv = document.getElementById('error-msg');
     errDiv.textContent = msg;
