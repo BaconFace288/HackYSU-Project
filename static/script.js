@@ -35,10 +35,23 @@ let currentFeedFilter = 'all'; // 'all' | 'hosted'
 // =========== Auth Check & Init ===========
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        if (!user.emailVerified) {
+            await auth.signOut();
+            window.location.href = '/login';
+            return;
+        }
+
         currentUser = user;
         // Fetch the user's role and ageRange from Firestore
         const userSnap = await getDoc(doc(db, "users", user.uid));
         const userData = userSnap.exists() ? userSnap.data() : {};
+        
+        if (userData.disabled) {
+            await auth.signOut();
+            window.location.href = '/login?error=banned';
+            return;
+        }
+
         const role = userData.role || "user";
         currentUserRole = role; // store globally
         currentUserAgeRange = userData.ageRange || 'everyone'; // store globally

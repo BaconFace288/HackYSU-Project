@@ -2,7 +2,9 @@ import { auth, db } from './firebase.js';
 import { 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
-    updateProfile 
+    updateProfile,
+    sendEmailVerification,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import {
     doc,
@@ -77,6 +79,14 @@ function showSuccess(msg) {
     document.getElementById('error-msg').style.display = 'none';
 }
 
+// Check URL params for error messages
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'banned') {
+        showError('Your account has been suspended or deleted by an administrator.');
+    }
+});
+
 window.handleLogin = async function(e) {
     e.preventDefault();
     const email = document.getElementById('login-username').value;
@@ -84,6 +94,22 @@ window.handleLogin = async function(e) {
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        if (!userCredential.user.emailVerified) {
+            await signOut(auth);
+            showError('Please verify your email address before logging in. Check your inbox.');
+            return;
+        }
+
+        // Check if user is banned (soft deleted)
+        const userRef = doc(db, "users", userCredential.user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().disabled) {
+            await signOut(auth);
+            showError('This account has been suspended or deleted by an administrator.');
+            return;
+        }
+
         // Ensure their Firestore profile exists and check for admin promotion
         await ensureUserDoc(userCredential.user, null);
         window.location.href = '/app';
@@ -118,12 +144,18 @@ window.handleRegister = async function(e) {
         // Create the Firestore user profile with role and age range
         await ensureUserDoc({ ...userCredential.user, displayName: username }, ageRange);
         
-        showSuccess('Account created! You can now log in.');
+        // Send email verification
+        await sendEmailVerification(userCredential.user);
+
+        // Sign out immediately so they have to verify
+        await signOut(auth);
+        
+        showSuccess('Account created! Please check your email and verify your account before logging in.');
         document.getElementById('reg-username').value = '';
         document.getElementById('reg-email').value = '';
         document.getElementById('reg-password').value = '';
         document.getElementById('reg-age-range').selectedIndex = 0;
-        setTimeout(() => window.switchTab('login'), 2000);
+        setTimeout(() => window.switchTab('login'), 3500);
     } catch (err) {
         let errorMsg = 'Registration failed.';
         if (err.code === 'auth/email-already-in-use') {
