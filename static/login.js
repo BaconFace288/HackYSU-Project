@@ -2,7 +2,9 @@ import { auth, db } from './firebase.js';
 import { 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
-    updateProfile 
+    updateProfile,
+    sendEmailVerification,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import {
     doc,
@@ -92,6 +94,30 @@ function showSuccess(msg) {
     document.getElementById('error-msg').style.display = 'none';
 }
 
+// Check URL params for error messages
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'banned') {
+        showError('Your account has been suspended or deleted by an administrator.');
+    }
+});
+
+window.resendVerification = async function(e) {
+    if (e) e.preventDefault();
+    if (auth.currentUser) {
+        try {
+            await sendEmailVerification(auth.currentUser);
+            showSuccess('Verification email resent! Please check your inbox and spam folder.');
+            // Sign out after resending so they are forced to log in again later
+            await signOut(auth);
+        } catch (err) {
+            showError('Failed to resend email: ' + err.message);
+        }
+    } else {
+        showError('Session expired. Please try logging in again to trigger a resend.');
+    }
+};
+
 window.handleLogin = async function(e) {
     e.preventDefault();
     const email = document.getElementById('login-username').value;
@@ -99,6 +125,24 @@ window.handleLogin = async function(e) {
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        if (!userCredential.user.emailVerified) {
+            const errDiv = document.getElementById('error-msg');
+            errDiv.innerHTML = `Please verify your email address. <a href="#" onclick="resendVerification(event)" style="color: #fff; text-decoration: underline; font-weight: bold;">Resend Email</a>`;
+            errDiv.style.display = 'block';
+            document.getElementById('success-msg').style.display = 'none';
+            return;
+        }
+
+        // Check if user is banned (soft deleted)
+        const userRef = doc(db, "users", userCredential.user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().disabled) {
+            await signOut(auth);
+            showError('This account has been suspended or deleted by an administrator.');
+            return;
+        }
+
         // Ensure their Firestore profile exists and check for admin promotion
         await ensureUserDoc(userCredential.user, null);
         window.location.href = '/app';
@@ -133,12 +177,18 @@ window.handleRegister = async function(e) {
         // Create the Firestore user profile with role and age range
         await ensureUserDoc({ ...userCredential.user, displayName: username }, ageRange);
         
-        showSuccess('Account created! You can now log in.');
+        // Send email verification
+        await sendEmailVerification(userCredential.user);
+
+        // Sign out immediately so they have to verify
+        await signOut(auth);
+        
+        showSuccess('Account created! Please check your email and verify your account before logging in.');
         document.getElementById('reg-username').value = '';
         document.getElementById('reg-email').value = '';
         document.getElementById('reg-password').value = '';
         document.getElementById('reg-age-range').selectedIndex = 0;
-        setTimeout(() => window.switchTab('login'), 2000);
+        setTimeout(() => window.switchTab('login'), 3500);
     } catch (err) {
         let errorMsg = 'Registration failed.';
         if (err.code === 'auth/email-already-in-use') {

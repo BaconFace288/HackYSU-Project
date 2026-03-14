@@ -6,3 +6,4 @@ pyjwt
 python-multipart
 openai
 httpx
+firebase-admin

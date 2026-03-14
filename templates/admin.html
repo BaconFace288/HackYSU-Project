@@ -556,6 +556,13 @@
             window.location.href = '/login';
             return;
         }
+
+        if (!user.emailVerified) {
+            await auth.signOut();
+            window.location.href = '/login';
+            return;
+        }
+
         currentAdminUser = user;
 
         const userRef = doc(db, "users", user.uid);
@@ -737,7 +744,13 @@
             const u = docSnap.data();
             const uid = docSnap.id;
             const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName || 'U')}&background=008088&color=fff&rounded=true`;
-            const badgeClass = u.role === "admin" ? "role-admin" : u.role === "Certified Therapist" ? "role-therapist" : "role-user";
+            let badgeClass = u.role === "admin" ? "role-admin" : u.role === "Certified Therapist" ? "role-therapist" : "role-user";
+            let roleLabel = u.role || 'user';
+            
+            if (u.disabled) {
+                badgeClass = "";
+                roleLabel = "Banned/Deleted";
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -746,14 +759,15 @@
                     ${u.displayName || 'Unknown'}
                 </td>
                 <td style="color: var(--text-secondary)">${u.email || '—'}</td>
-                <td><span class="role-badge ${badgeClass}">${u.role || 'user'}</span></td>
+                <td><span class="role-badge ${badgeClass}" ${u.disabled ? 'style="background:rgba(239,68,68,0.1); color:#ef4444;"' : ''}>${roleLabel}</span></td>
                 <td>
-                    <select class="role-selector" id="role-select-${uid}">
+                    <select class="role-selector" id="role-select-${uid}" ${u.disabled ? 'disabled' : ''}>
                         <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
                         <option value="Certified Therapist" ${u.role === 'Certified Therapist' ? 'selected' : ''}>Certified Therapist</option>
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
-                    <button class="action-btn" style="margin-left: 8px;" onclick="saveRole('${uid}')">Save</button>
+                    <button class="action-btn" style="margin-left: 8px;" onclick="saveRole('${uid}')" ${u.disabled ? 'disabled style="opacity:0.5"' : ''}>Save</button>
+                    ${!u.disabled && u.role !== 'admin' ? `<button class="action-btn" style="margin-left: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteSystemUser('${uid}', '${escapeJs(u.displayName)}')">Delete User</button>` : ''}
                 </td>
             `;
             tbody.appendChild(tr);
@@ -787,6 +801,26 @@
             loadStats();
         } catch (e) {
             alert("Failed to update role: " + e.message);
+        }
+    };
+
+    // ---- Soft-Delete User ----
+    window.deleteSystemUser = async function(uid, name) {
+        if (!confirm(`Are you sure you want to delete and ban the user account for ${name}? They will no longer be able to log in.`)) return;
+        try {
+            await updateDoc(doc(db, "users", uid), { disabled: true, role: 'user' });
+            // Drop them from therapists if they are one
+            try {
+                await updateDoc(doc(db, "therapistApplications", uid), {
+                    status: 'banned',
+                    demotedAt: Date.now()
+                });
+            } catch (_) {}
+
+            loadUsers();
+            loadStats();
+        } catch (e) {
+            alert("Failed to delete user: " + e.message);
         }
     };
 

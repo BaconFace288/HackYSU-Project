@@ -35,10 +35,23 @@ let currentFeedFilter = 'all'; // 'all' | 'hosted'
 // =========== Auth Check & Init ===========
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        if (!user.emailVerified) {
+            await auth.signOut();
+            window.location.href = '/login';
+            return;
+        }
+
         currentUser = user;
         // Fetch the user's role and ageRange from Firestore
         const userSnap = await getDoc(doc(db, "users", user.uid));
         const userData = userSnap.exists() ? userSnap.data() : {};
+        
+        if (userData.disabled) {
+            await auth.signOut();
+            window.location.href = '/login?error=banned';
+            return;
+        }
+
         const role = userData.role || "user";
         currentUserRole = role; // store globally
         currentUserAgeRange = userData.ageRange || 'everyone'; // store globally
@@ -448,9 +461,13 @@ window.sendMessage = async function (event) {
         statusEl.textContent = '🔍 Checking image with AI...';
         statusEl.style.color = '#ca8a04';
         try {
+            const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
             const modRes = await fetch('/api/moderate-image', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ image_data: pendingImageData })
             });
             const modData = await modRes.json();
@@ -500,10 +517,30 @@ window.sendMessage = async function (event) {
         let aiReason = null;
 
         if (text) {
+            showTyping();
+
             try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ messages: healBotHistory })
+                });
+            } catch (err) {
+                console.warn('AI chat failed:', err);
+            }
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
                 const intentRes = await fetch('/api/check-intent', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ text: text })
                 });
                 const intentData = await intentRes.json();
