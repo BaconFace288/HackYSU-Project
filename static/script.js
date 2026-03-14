@@ -28,6 +28,7 @@ let currentUser = null;
 let currentUserRole = 'user'; // persisted after auth
 let currentRoomId = null;
 let unsubscribeMessages = null;
+let currentFeedFilter = 'all'; // 'all' | 'hosted'
 
 // =========== Auth Check & Init ===========
 onAuthStateChanged(auth, async (user) => {
@@ -103,26 +104,99 @@ function setupUI(role) {
             window.location.href = '/settings';
         };
     }
+
+    // Inject 'My Hosted Chats' tab strip (admins & therapists only)
+    if (role === 'admin' || role === 'Certified Therapist') {
+        const boardHeader = document.querySelector('.board-header');
+        if (boardHeader) {
+            const tabStrip = document.createElement('div');
+            tabStrip.id = 'feed-tab-strip';
+            tabStrip.style.cssText = `
+                display: flex;
+                gap: 6px;
+                margin-top: 12px;
+                padding: 4px;
+                background: rgba(0,0,0,0.04);
+                border-radius: 10px;
+                width: 100%;
+            `;
+            tabStrip.innerHTML = `
+                <button id="tab-all" onclick="window.setFeedTab('all')"
+                    style="flex:1; padding: 7px 14px; border-radius: 7px; border: none; cursor: pointer;
+                           font-size: 0.88rem; font-weight: 600; background: var(--primary); color: white;
+                           transition: all 0.2s;">
+                    💬 All Chats
+                </button>
+                <button id="tab-hosted" onclick="window.setFeedTab('hosted')"
+                    style="flex:1; padding: 7px 14px; border-radius: 7px; border: none; cursor: pointer;
+                           font-size: 0.88rem; font-weight: 600; background: transparent; color: var(--text-secondary);
+                           transition: all 0.2s;">
+                    ${ role === 'admin' ? '🛡️' : '🧠' } My Hosted Chats
+                </button>
+            `;
+            // Insert tab strip below the h2/button row
+            boardHeader.style.flexWrap = 'wrap';
+            boardHeader.appendChild(tabStrip);
+        }
+    }
 }
+
+// Switch feed tab (all | hosted)
+window.setFeedTab = function(tab) {
+    currentFeedFilter = tab;
+    const tabAll = document.getElementById('tab-all');
+    const tabHosted = document.getElementById('tab-hosted');
+    if (tabAll && tabHosted) {
+        tabAll.style.background = tab === 'all' ? 'var(--primary)' : 'transparent';
+        tabAll.style.color = tab === 'all' ? 'white' : 'var(--text-secondary)';
+        tabHosted.style.background = tab === 'hosted' ? 'var(--primary)' : 'transparent';
+        tabHosted.style.color = tab === 'hosted' ? 'white' : 'var(--text-secondary)';
+    }
+    renderFeed(window._latestFeedSnapshot);
+};
 
 // =========== Board / Feed Logic ===========
 function listenForPosts() {
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     
     onSnapshot(q, (snapshot) => {
-        feedContainer.innerHTML = ''; // Clear skeleton
-        
-        if (snapshot.empty) {
-            feedContainer.innerHTML = `
-                <div class="post-card" style="grid-column: 1 / -1; text-align: center; background: transparent; border: 2px dashed var(--border);">
-                    <h3 style="color: var(--text-secondary);">No active support requests</h3>
-                    <p>Be the first to create a post and start a conversation!</p>
-                </div>
-            `;
-            return;
-        }
+        window._latestFeedSnapshot = snapshot; // store for re-rendering on tab switch
+        renderFeed(snapshot);
+    }, (error) => {
+        console.error("Firestore Listen Error:", error);
+        feedContainer.innerHTML = `
+            <div class="post-card" style="border-color: #ef4444;">
+                <h3 style="color: #ef4444;">Connection Error</h3>
+                <p>${error.message}</p>
+            </div>
+        `;
+    });
+}
 
-        snapshot.forEach((docSnap) => {
+function renderFeed(snapshot) {
+    if (!snapshot) return;
+    feedContainer.innerHTML = '';
+
+    // Filter docs based on active tab
+    let docs = snapshot.docs;
+    if (currentFeedFilter === 'hosted') {
+        docs = docs.filter(d => d.data().hostUid === currentUser.uid);
+    }
+
+    if (docs.length === 0) {
+        const emptyMsg = currentFeedFilter === 'hosted'
+            ? 'You are not currently hosting any chats.'
+            : 'No active support requests. Be the first to create a post!';
+        feedContainer.innerHTML = `
+            <div class="post-card" style="grid-column: 1 / -1; text-align: center; background: transparent; border: 2px dashed var(--border);">
+                <h3 style="color: var(--text-secondary);">${currentFeedFilter === 'hosted' ? '🛡️ No Hosted Chats' : 'No active support requests'}</h3>
+                <p>${emptyMsg}</p>
+            </div>
+        `;
+        return;
+    }
+
+    docs.forEach((docSnap) => {
             const postId = docSnap.id;
             const data = docSnap.data();
             const isPending = data.status === 'pending';
@@ -176,15 +250,6 @@ function listenForPosts() {
 
             feedContainer.appendChild(card);
         });
-    }, (error) => {
-        console.error("Firestore Listen Error:", error);
-        feedContainer.innerHTML = `
-            <div class="post-card" style="border-color: #ef4444;">
-                <h3 style="color: #ef4444;">Connection Error</h3>
-                <p>${error.message}</p>
-            </div>
-        `;
-    });
 }
 
 window.openCreateModal = function() {
