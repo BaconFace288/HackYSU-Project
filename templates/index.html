@@ -275,6 +275,10 @@
         }
         #healbot-btn:hover { transform: scale(1.08); }
 
+        @keyframes healbot-slide-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
         #healbot-popup {
             display: none;
             position: fixed;
@@ -287,13 +291,14 @@
             border-radius: 18px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.25);
             z-index: 9001;
-            display: none;
             flex-direction: column;
             overflow: hidden;
-            animation: crisisSlideUp 0.35s cubic-bezier(0.16,1,0.3,1);
             backdrop-filter: blur(12px);
         }
-        #healbot-popup.open { display: flex; }
+        #healbot-popup.open {
+            display: flex;
+            animation: healbot-slide-up 0.35s cubic-bezier(0.16,1,0.3,1);
+        }
 
         #healbot-header {
             padding: 0.85rem 1rem;
