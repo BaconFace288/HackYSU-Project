@@ -1,20 +1,27 @@
 /* Base Reset and Variables */
 :root {
-    --bg-color-1: #0f172a; /* Slate 900 */
-    --bg-color-2: #1e1b4b; /* Indigo 950 */
+    /* Soft White Theme Colors */
+    --bg-color-1: #f8fafc; /* Slate 50 */
+    --bg-color-2: #e2e8f0; /* Slate 200 */
     
-    /* Glassmorphism Variables */
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    /* Light Glassmorphism Variables */
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
     
+    /* Vibrant Primary Accents */
     --primary-color: #6366f1; /* Indigo 500 */
     --primary-hover: #4f46e5; /* Indigo 600 */
-    --text-main: #f8fafc; /* Slate 50 */
-    --text-muted: #94a3b8; /* Slate 400 */
+    --primary-light: #e0e7ff; /* Indigo 100 */
     
-    --message-bg-other: rgba(30, 41, 59, 0.7); /* Slate 800 */
-    --message-bg-self: #4f46e5; /* Indigo 600 */
+    /* Typography */
+    --text-main: #0f172a; /* Slate 900 */
+    --text-muted: #64748b; /* Slate 500 */
+    --text-inverse: #ffffff; /* White text for contrast on primary */
+    
+    /* Message Backgrounds */
+    --message-bg-other: #ffffff; /* Clean white card */
+    --message-bg-self: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); /* Vibrant Indigo/Purple */
 }
 
 * {
@@ -25,8 +32,8 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    /* Deep animated gradient background */
-    background: linear-gradient(135deg, var(--bg-color-1) 0%, var(--bg-color-2) 100%);
+    /* Soft, airy animated gradient background */
+    background: linear-gradient(135deg, var(--bg-color-1) 0%, #f1f5f9 50%, var(--bg-color-2) 100%);
     background-size: 200% 200%;
     animation: gradientBG 15s ease infinite;
     color: var(--text-main);
@@ -56,8 +63,8 @@ body {
 /* Glass Panels */
 .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: 24px;
     box-shadow: var(--glass-shadow);
@@ -72,6 +79,7 @@ body {
     padding: 24px;
     gap: 30px;
     transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.45); /* slightly more opaque for sidebar structure */
 }
 
 .brand {
@@ -90,13 +98,14 @@ body {
     align-items: center;
     font-size: 1.2rem;
     color: white;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .brand h2 {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.5rem;
     letter-spacing: -0.5px;
+    color: var(--text-main);
 }
 
 /* User Profile */
@@ -105,21 +114,24 @@ body {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.5);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
 .avatar img {
     width: 45px;
     height: 45px;
     border-radius: 50%;
-    border: 2px solid var(--primary-color);
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .user-info h3 {
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--text-main);
 }
 
 .status {
@@ -128,6 +140,7 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+    font-weight: 500;
 }
 
 .status.online i {
@@ -143,6 +156,7 @@ body {
     color: var(--text-muted);
     margin-bottom: 12px;
     padding-left: 10px;
+    font-weight: 600;
 }
 
 .channels ul {
@@ -165,14 +179,15 @@ body {
 }
 
 .channels li:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.6);
     color: var(--text-main);
 }
 
 .channels li.active {
-    background: rgba(99, 102, 241, 0.15);
+    background: var(--primary-light);
     color: var(--primary-color);
     border-left: 3px solid var(--primary-color);
+    font-weight: 600;
 }
 
 /* Main Chat Area */
@@ -180,6 +195,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .chat-header {
@@ -188,21 +204,24 @@ body {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--glass-border);
-    background: rgba(255, 255, 255, 0.01);
+    background: rgba(255, 255, 255, 0.4);
+    z-index: 10;
 }
 
 .channel-info h2 {
     font-size: 1.3rem;
-    font-weight: 600;
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--text-main);
 }
 
 .channel-info p {
     font-size: 0.85rem;
     color: var(--text-muted);
     margin-top: 4px;
+    font-weight: 500;
 }
 
 .icon-btn {
@@ -221,7 +240,7 @@ body {
 }
 
 .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.05);
     color: var(--text-main);
 }
 
@@ -243,11 +262,11 @@ body {
     background: transparent;
 }
 .messages-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
     border-radius: 10px;
 }
 .messages-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 /* Individual Messages */
@@ -255,12 +274,12 @@ body {
     display: flex;
     flex-direction: column;
     max-width: 70%;
-    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(15px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .message-sender {
@@ -268,28 +287,34 @@ body {
     color: var(--text-muted);
     margin-bottom: 5px;
     margin-left: 5px;
+    font-weight: 600;
 }
 
 .message-content {
-    padding: 14px 18px;
+    padding: 14px 20px;
     border-radius: 20px;
     font-size: 0.95rem;
     line-height: 1.5;
     position: relative;
     word-break: break-word;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
 }
 
 /* System Message */
 .system-message {
     align-self: center;
     max-width: 100%;
+    animation: fadeIn 0.5s ease;
 }
 .system-message p {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.6);
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 0.8rem;
     color: var(--text-muted);
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
 /* Other's Message */
@@ -299,7 +324,8 @@ body {
 
 .message.other .message-content {
     background: var(--message-bg-other);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.8);
     border-bottom-left-radius: 4px;
 }
 
@@ -314,16 +340,18 @@ body {
 
 .message.self .message-content {
     background: var(--message-bg-self);
-    color: white;
+    color: var(--text-inverse);
     border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Input Area */
 .input-area {
     padding: 20px 30px;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.4);
     border-top: 1px solid var(--glass-border);
+    z-index: 10;
 }
 
 #chat-form {
@@ -333,17 +361,19 @@ body {
 .input-wrapper {
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 24px;
-    padding: 5px 10px;
+    padding: 6px 10px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
 .input-wrapper:focus-within {
-    border-color: rgba(99, 102, 241, 0.5);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    background: #ffffff;
+    transform: translateY(-1px);
 }
 
 #message-input {
@@ -355,31 +385,33 @@ body {
     font-size: 1rem;
     outline: none;
     font-family: inherit;
+    font-weight: 500;
 }
 
 #message-input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-muted);
+    font-weight: 400;
 }
 
 .send-btn {
-    background: var(--primary-color);
+    background: var(--message-bg-self); /* Match the self message bubble */
     color: white;
     border: none;
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     margin-left: 5px;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .send-btn:hover {
-    background: var(--primary-hover);
-    transform: scale(1.05);
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
 .send-btn i {
