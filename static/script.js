@@ -40,6 +40,7 @@ onAuthStateChanged(auth, async (user) => {
         currentUserRole = role; // store globally
         setupUI(role);
         listenForPosts(); // Load the Community Feed immediately
+        checkTherapistStatus(user.uid); // Watch for approval/denial notifications
     } else {
         window.location.href = '/login';
     }
@@ -486,4 +487,92 @@ function showCrisisPopup() {
     window._crisisPopupTimer = setTimeout(() => {
         popup.style.display = 'none';
     }, 30000);
+}
+
+// =========== Therapist Application Status Watcher ===========
+function checkTherapistStatus(uid) {
+    // Only register listener for regular users (skip admins/therapists)
+    if (currentUserRole === 'admin' || currentUserRole === 'Certified Therapist') return;
+
+    onSnapshot(doc(db, "therapistApplications", uid), (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const status = data.status;
+        const notifiedKey = `therapist_notified_${uid}_${status}`;
+
+        // Only show the popup once per status change
+        if (localStorage.getItem(notifiedKey)) return;
+
+        if (status === 'approved') {
+            localStorage.setItem(notifiedKey, '1');
+            showTherapistPopup('approved', null);
+            // Freshen the local role so the badge updates without reload
+            currentUserRole = 'Certified Therapist';
+        } else if (status === 'denied') {
+            localStorage.setItem(notifiedKey, '1');
+            showTherapistPopup('denied', data.denialReason || 'No reason provided.');
+        }
+    });
+}
+
+function showTherapistPopup(type, reason) {
+    // Create or re-use popup element
+    let popup = document.getElementById('therapist-decision-popup');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'therapist-decision-popup';
+        popup.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55); z-index: 99999;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); animation: fadeIn 0.3s ease;
+        `;
+        document.body.appendChild(popup);
+    }
+
+    const isApproved = type === 'approved';
+    popup.innerHTML = `
+        <div style="
+            background: var(--card-bg); border-radius: 20px; padding: 2.5rem 2rem;
+            max-width: 440px; width: 90%; text-align: center; position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 1.5px solid ${isApproved ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.35)'};
+            animation: crisisSlideUp 0.4s cubic-bezier(0.16,1,0.3,1);
+        ">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem;">${isApproved ? '🎉' : '😔'}</div>
+            <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem;
+                color: ${isApproved ? '#16a34a' : '#ef4444'};">
+                ${isApproved ? 'You\'re now a Certified Therapist!' : 'Application Not Approved'}
+            </h2>
+            <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem;">
+                ${isApproved
+                    ? 'Congratulations! Your therapist application has been approved by the HealSpace admin team. You can now host group chats and support users on the platform. 🧠'
+                    : 'Unfortunately, the admin team was unable to approve your application at this time.'}
+            </p>
+            ${!isApproved && reason ? `
+                <div style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25);
+                    border-radius: 10px; padding: 12px 16px; font-size: 0.88rem; margin-bottom: 1rem; text-align: left;">
+                    <strong>Reason:</strong> ${reason}
+                </div>` : ''}
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem;">
+                ${isApproved ? `
+                <button onclick="location.reload()"
+                    style="background: linear-gradient(135deg,#008088,#773585); color:white; border:none;
+                           padding: 10px 24px; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer;">
+                    Reload to see my badge 🧠
+                </button>` : `
+                <button onclick="window.location.href='/settings'"
+                    style="background: var(--primary); color:white; border:none;
+                           padding: 10px 24px; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer;">
+                    View Details in Settings
+                </button>`}
+                <button onclick="document.getElementById('therapist-decision-popup').remove()"
+                    style="background: rgba(0,0,0,0.06); color: var(--text-secondary); border: 1px solid var(--border);
+                           padding: 10px 20px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer;">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    `;
+    popup.style.display = 'flex';
 }
