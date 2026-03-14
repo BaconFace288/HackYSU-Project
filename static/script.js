@@ -1,4 +1,5 @@
 import { auth, db } from './firebase.js';
+import { containsProfanity } from './profanity.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { 
     collection, 
@@ -396,7 +397,13 @@ window.sendMessage = async function(event) {
 
     const text = messageInput.value.trim();
     if (text === '') return;
-    
+
+    // ---- Profanity filter ----
+    if (containsProfanity(text)) {
+        showProfanityAlert();
+        return;
+    }
+
     messageInput.value = '';
     
     // Add small visual feedback on send button
@@ -473,6 +480,31 @@ function appendMessage(data) {
         behavior: 'smooth'
     });
 }
+
+// =========== Profanity Alert ===========
+function showProfanityAlert() {
+    let toast = document.getElementById('profanity-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'profanity-toast';
+        toast.style.cssText = `
+            position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+            background: rgba(239,68,68,0.92); color: white;
+            padding: 10px 22px; border-radius: 12px;
+            font-size: 0.9rem; font-weight: 600;
+            box-shadow: 0 4px 20px rgba(239,68,68,0.35);
+            z-index: 99999; backdrop-filter: blur(8px);
+            animation: crisisSlideUp 0.3s ease;
+            display: flex; align-items: center; gap: 10px;
+        `;
+        toast.innerHTML = '🚫 <span>Your message contains inappropriate language and cannot be sent.</span>';
+        document.body.appendChild(toast);
+    }
+    toast.style.display = 'flex';
+    clearTimeout(window._profanityTimer);
+    window._profanityTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+window.showProfanityAlert = showProfanityAlert;
 
 // =========== Crisis Support Popup ===========
 function showCrisisPopup() {

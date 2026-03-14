@@ -519,6 +519,7 @@
 
 <script type="module">
     import { auth, db } from '/static/firebase.js';
+    import { containsProfanity } from '/static/profanity.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
     import {
         collection, addDoc, query, where, onSnapshot,
@@ -901,6 +902,12 @@
         const input = document.getElementById('conv-input');
         const text = input.value.trim();
         if (!text) return;
+        // Profanity filter
+        if (containsProfanity(text)) {
+            if (typeof window.showProfanityAlert === 'function') window.showProfanityAlert();
+            else alert('Your message contains inappropriate language.');
+            return;
+        }
         input.value = '';
         try {
             await addDoc(collection(db, "posts", roomId, "messages"), {
@@ -950,6 +957,12 @@
         const input = document.getElementById('conv-input');
         const text = input.value.trim();
         if (!text) return;
+        // Profanity filter
+        if (containsProfanity(text)) {
+            if (typeof window.showProfanityAlert === 'function') window.showProfanityAlert();
+            else alert('Your message contains inappropriate language.');
+            return;
+        }
         input.value = '';
 
         const msgData = {

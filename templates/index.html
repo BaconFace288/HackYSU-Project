@@ -412,9 +412,38 @@
             const input = document.getElementById('healbot-input');
             const text = input.value.trim();
             if (!text) return;
-            input.value = '';
-            input.style.height = 'auto';
 
+            // ---- Profanity filter (uses same function exposed by script.js) ----
+            if (typeof window.checkForCrisisKeywords !== 'undefined') {
+                // profanity.js is a module — call directly if loaded, else use the inline fallback
+            }
+            const LEET_MAP = [
+                [/[@4]/g,'a'],[/[3]/g,'e'],[/[1!|]/g,'i'],[/[0]/g,'o'],[/[$5]/g,'s'],
+                [/[7]/g,'t'],[/ph/g,'f'],[/(.)\1{2,}/g,'$1$1']
+            ];
+            function quickNorm(t) {
+                let s = t.toLowerCase();
+                LEET_MAP.forEach(([re,r]) => s = s.replace(re, r));
+                return s.replace(/[-._* ]/g,'');
+            }
+            const QUICK_BAD = ['fuck','shit','bitch','cunt','nigger','faggot','retard','rape','nigga','cock','pussy','asshole'];
+            const normMsg = quickNorm(text);
+            const hasProfanity = QUICK_BAD.some(w => normMsg.includes(w));
+
+            if (hasProfanity) {
+                if (typeof window.showProfanityAlert === 'function') window.showProfanityAlert();
+                const container = document.getElementById('healbot-messages');
+                const d = document.createElement('div');
+                d.className = 'hb-msg bot';
+                d.style.cssText = 'border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.06);';
+                d.textContent = '🚫 I can\'t respond to messages with inappropriate language. Please keep our conversation respectful.';
+                container.appendChild(d);
+                container.scrollTop = container.scrollHeight;
+                input.value = '';
+                return;
+            }
+
+            input.style.height = 'auto';
             addHealBotMsg('user', text);
             healBotHistory.push({ role: 'user', text });
 
