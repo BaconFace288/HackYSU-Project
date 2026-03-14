@@ -419,6 +419,37 @@ body {
     margin-left: -2px; /* Visual centering adjustment for paper-plane */
 }
 
+/* Dark Mode Overrides */
+html.dark-mode {
+    --bg-color-1: #0f172a; /* Slate 900 */
+    --bg-color-2: #1e293b; /* Slate 800 */
+    
+    --glass-bg: rgba(0, 0, 0, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    --text-main: #f8fafc; /* Slate 50 */
+    --text-muted: #94a3b8; /* Slate 400 */
+    
+    --message-bg-other: rgba(30, 41, 59, 0.8); /* Slate 800 for other's messages */
+}
+
+/* Make inputs readable in dark mode */
+html.dark-mode .input-wrapper,
+html.dark-mode .input-group input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .message.other .message-content {
+    background: var(--message-bg-other);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .system-message p {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .sidebar {

@@ -9,6 +9,12 @@
     <link rel="stylesheet" href="/static/style.css">
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Apply theme immediately to prevent flash
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
 </head>
 <body>
     <div class="app-container">
@@ -36,6 +42,10 @@
                 <ul>
                     <li class="active"><i class="fa-solid fa-hashtag"></i> general</li>
                     <li><i class="fa-solid fa-hashtag"></i> random</li>
+                </ul>
+                <h4 style="margin-top: 20px;">Preferences</h4>
+                <ul>
+                    <li onclick="window.location.href='/settings'"><i class="fa-solid fa-gear"></i> Settings</li>
                 </ul>
             </div>
         </aside>
