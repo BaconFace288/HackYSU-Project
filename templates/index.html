@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealSpace</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-panel">
+            <div class="brand">
+                <div class="logo">
+                     <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h2>HealSpace</h2>
+            </div>
+            
+            <div class="user-profile">
+                <div class="avatar">
+                    <img src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&rounded=true" alt="User Avatar">
+                </div>
+                <div class="user-info">
+                    <h3>Guest User</h3>
+                    <span class="status online"><i class="fa-solid fa-circle"></i> Online</span>
+                </div>
+            </div>
+
+            <div class="channels">
+                <h4>Channels</h4>
+                <ul>
+                    <li class="active"><i class="fa-solid fa-hashtag"></i> general</li>
+                    <li><i class="fa-solid fa-hashtag"></i> random</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area glass-panel">
+            <header class="chat-header">
+                <div class="channel-info">
+                    <h2><i class="fa-solid fa-hashtag"></i> general</h2>
+                    <p>Welcome to the global chat room</p>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    <button class="icon-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messages-container">
+                <!-- Messages will be injected here by JS -->
+                <div class="message system-message">
+                    <p>Welcome to HealSpace! Start typing to connect.</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <form id="chat-form" onsubmit="sendMessage(event)">
+                    <div class="input-wrapper">
+                        <button type="button" class="icon-btn attach-btn"><i class="fa-solid fa-paperclip"></i></button>
+                        <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                        <button type="button" class="icon-btn emoji-btn"><i class="fa-regular fa-face-smile"></i></button>
+                        <button type="submit" class="send-btn" id="send-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Random ID generation for pseudo-identity -->
+    <script>
+        // Generate a random ID to pseudo-differentiate users in this demo
+        window.userId = Math.floor(Math.random() * 10000).toString();
+    </script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
