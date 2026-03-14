@@ -49,8 +49,8 @@ function setupUI() {
 }
 
 function listenForMessages() {
-    // Listen to the 'messages' collection, ordered by time, limit 50
-    const q = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(50));
+    // Simplified query to bypass complex Firebase indexing requirements
+    const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
     
     // Clear the dummy message
     messagesContainer.innerHTML = '';
@@ -61,6 +61,9 @@ function listenForMessages() {
                 appendMessage(change.doc.data());
             }
         });
+    }, (error) => {
+        console.error("Firestore Listen Error:", error);
+        alert("Firebase Auth/Permission Error: " + error.message + "\n\nPlease ensure your Firestore Database is built and set to 'Test Mode'.");
     });
 }
 
@@ -83,10 +86,11 @@ window.sendMessage = async function(event) {
             text: text,
             uid: currentUser.uid,
             displayName: currentUser.displayName,
-            createdAt: serverTimestamp()
+            createdAt: Date.now() // Use standard local time to avoid serverTimestamp sync delays
         });
     } catch (e) {
         console.error("Error adding document: ", e);
+        alert("Failed to send: " + e.message + "\n\nMake sure your Firestore Database rules are in Test Mode!");
     }
 }
 
