@@ -448,9 +448,13 @@ window.sendMessage = async function (event) {
         statusEl.textContent = '🔍 Checking image with AI...';
         statusEl.style.color = '#ca8a04';
         try {
+            const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
             const modRes = await fetch('/api/moderate-image', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ image_data: pendingImageData })
             });
             const modData = await modRes.json();
@@ -500,10 +504,30 @@ window.sendMessage = async function (event) {
         let aiReason = null;
 
         if (text) {
+            showTyping();
+
             try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ messages: healBotHistory })
+                });
+            } catch (err) {
+                console.warn('AI chat failed:', err);
+            }
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : "";
                 const intentRes = await fetch('/api/check-intent', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ text: text })
                 });
                 const intentData = await intentRes.json();

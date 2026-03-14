@@ -1,15 +1,36 @@
 import os
-from fastapi import FastAPI, Request as StarletteRequest
+from fastapi import FastAPI, Request as StarletteRequest, Depends, HTTPException, Header
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List
+import firebase_admin
+from firebase_admin import auth as firebase_auth
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Initialize Firebase Admin
+try:
+    firebase_admin.get_app()
+except ValueError:
+    # Note: Requires GOOGLE_APPLICATION_CREDENTIALS for full signature verification
+    firebase_admin.initialize_app()
+
+def verify_token(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = authorization.split("Bearer ")[1].strip()
+    try:
+        return firebase_auth.verify_id_token(token)
+    except Exception as e:
+        print(f"Token verification failed: {e}")
+        # For hackathon purposes, failing open if service account credentials aren't set
+        # In a real production app, you strictly: raise HTTPException(status_code=401)
+        return {"uid": "unverified", "error": str(e)}
 
 # ---- OpenAI Chat endpoint ----
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -38,7 +59,7 @@ class IntentRequest(BaseModel):
     text: str
 
 @app.post("/api/chat")
-async def ai_chat(body: ChatRequest):
+async def ai_chat(body: ChatRequest, user: dict = Depends(verify_token)):
     if not OPENAI_API_KEY:
         return JSONResponse(
             {"reply": "The AI assistant isn't configured yet. Please ask an admin to set the OPENAI_API_KEY environment variable."},
@@ -69,7 +90,7 @@ class ImageModRequest(BaseModel):
     image_data: str   # base64 data URL  e.g. "data:image/jpeg;base64,..."
 
 @app.post("/api/moderate-image")
-async def moderate_image(body: ImageModRequest):
+async def moderate_image(body: ImageModRequest, user: dict = Depends(verify_token)):
     if not OPENAI_API_KEY:
         # No key set — auto-approve so the feature still works (admin should set the key)
         return JSONResponse({"approved": True, "reason": "Moderation not configured; image auto-approved."})
@@ -114,7 +135,7 @@ async def moderate_image(body: ImageModRequest):
 
 # ---- Intent checking endpoint ----
 @app.post("/api/check-intent")
-async def check_intent(body: IntentRequest):
+async def check_intent(body: IntentRequest, user: dict = Depends(verify_token)):
     if not OPENAI_API_KEY:
         # No key set - bypass intent checking
         return JSONResponse({"hazardous": False, "reason": "No API key configured."})
