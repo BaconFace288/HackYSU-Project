@@ -87,6 +87,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.resendVerification = async function(e) {
+    if (e) e.preventDefault();
+    if (auth.currentUser) {
+        try {
+            await sendEmailVerification(auth.currentUser);
+            showSuccess('Verification email resent! Please check your inbox and spam folder.');
+            // Sign out after resending so they are forced to log in again later
+            await signOut(auth);
+        } catch (err) {
+            showError('Failed to resend email: ' + err.message);
+        }
+    } else {
+        showError('Session expired. Please try logging in again to trigger a resend.');
+    }
+};
+
 window.handleLogin = async function(e) {
     e.preventDefault();
     const email = document.getElementById('login-username').value;
@@ -96,8 +112,10 @@ window.handleLogin = async function(e) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         
         if (!userCredential.user.emailVerified) {
-            await signOut(auth);
-            showError('Please verify your email address before logging in. Check your inbox.');
+            const errDiv = document.getElementById('error-msg');
+            errDiv.innerHTML = `Please verify your email address. <a href="#" onclick="resendVerification(event)" style="color: #fff; text-decoration: underline; font-weight: bold;">Resend Email</a>`;
+            errDiv.style.display = 'block';
+            document.getElementById('success-msg').style.display = 'none';
             return;
         }
 
