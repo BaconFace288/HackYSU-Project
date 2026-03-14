@@ -339,24 +339,109 @@
             <i class="fas fa-right-from-bracket" style="margin-right:8px;"></i>Log Out
         </button>
     </div>
+
+    <!-- Therapist Verification --- shown/hidden by JS based on role -->
+    <div class="settings-section" id="therapist-section" style="display:none;">
+        <span class="section-label">🧠 Therapist Verification</span>
+
+        <!-- Status banner (populated by JS) -->
+        <div id="therapist-status-banner" style="display:none;"></div>
+
+        <!-- Application Form (only shown when status allows) -->
+        <div id="therapist-form-wrapper">
+            <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:1rem; line-height:1.6;">
+                Apply to become a <strong>Certified Therapist</strong> on HealSpace. Your application will be reviewed by an admin. Please have your degree certificate and photo ID ready.
+            </p>
+
+            <!-- Step 1: Questions -->
+            <div id="app-step-1">
+                <div class="edit-group">
+                    <label>What is your professional title / specialization?</label>
+                    <input type="text" id="app-title" placeholder="e.g. Licensed Clinical Social Worker">
+                </div>
+                <div class="edit-group" style="margin-top:10px;">
+                    <label>Where did you study? (Institution &amp; Degree)</label>
+                    <input type="text" id="app-education" placeholder="e.g. MSW, University of Pittsburgh, 2019">
+                </div>
+                <div class="edit-group" style="margin-top:10px;">
+                    <label>License / Registration Number (if applicable)</label>
+                    <input type="text" id="app-license" placeholder="e.g. LPC-1234567 or N/A">
+                </div>
+                <div class="edit-group" style="margin-top:10px;">
+                    <label>Years of clinical experience</label>
+                    <input type="number" id="app-experience" min="0" placeholder="e.g. 5">
+                </div>
+                <div class="edit-group" style="margin-top:10px;">
+                    <label>Brief statement: Why do you want to support users on HealSpace?</label>
+                    <textarea id="app-statement" rows="3"
+                        style="width:100%; border-radius:10px; border:1px solid var(--border); padding:10px 14px;
+                               background:rgba(0,0,0,0.04); color:var(--text-primary); font-family:inherit;
+                               font-size:0.95rem; resize:vertical; outline:none;"
+                        placeholder="In 2–3 sentences, describe your motivation..."></textarea>
+                </div>
+                <button class="save-btn" style="margin-top:14px; width:100%; justify-content:center;"
+                    onclick="window.appNextStep()">
+                    Next: Upload Documents →
+                </button>
+            </div>
+
+            <!-- Step 2: Document Upload -->
+            <div id="app-step-2" style="display:none;">
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:14px;">
+                    Please upload clear scans or photos of the following. Supported: JPG, PNG, PDF (max 10 MB each).
+                </p>
+                <div class="edit-group">
+                    <label>🎓 Degree / Qualification Certificate</label>
+                    <input type="file" id="app-degree-file" accept="image/*,.pdf"
+                        style="padding:8px; border-radius:10px; border:1px solid var(--border); width:100%; font-size:0.9rem;">
+                </div>
+                <div class="edit-group" style="margin-top:12px;">
+                    <label>📄 Government-Issued Photo ID</label>
+                    <input type="file" id="app-id-file" accept="image/*,.pdf"
+                        style="padding:8px; border-radius:10px; border:1px solid var(--border); width:100%; font-size:0.9rem;">
+                </div>
+                <div id="upload-progress" style="margin-top:12px; font-size:0.85rem; color:var(--text-secondary);"></div>
+                <div style="display:flex; gap:10px; margin-top:14px;">
+                    <button class="save-btn" style="background:transparent; color:var(--text-secondary); border:1px solid var(--border);"
+                        onclick="document.getElementById('app-step-1').style.display='block'; document.getElementById('app-step-2').style.display='none';">
+                        ← Back
+                    </button>
+                    <button class="save-btn" id="app-submit-btn" style="flex:1; justify-content:center;"
+                        onclick="window.submitTherapistApplication()">
+                        🚀 Submit Application
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="module">
-    import { auth } from '/static/firebase.js';
+    import { auth, db, storage } from '/static/firebase.js';
     import {
         onAuthStateChanged,
         signOut,
         updateProfile,
         updatePassword
     } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import {
+        doc, getDoc, setDoc, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import {
+        ref, uploadBytesResumable, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
 
     let currentUser = null;
 
     // ------ Auth Guard & Population ------
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
             populateProfile(user);
+            // Fetch role and show/hide therapist section accordingly
+            const userSnap = await getDoc(doc(db, "users", user.uid));
+            const role = userSnap.exists() ? userSnap.data().role : 'user';
+            loadTherapistSection(role, user.uid);
         } else {
             window.location.href = '/login';
         }
@@ -427,6 +512,171 @@
         box.style.display = 'block';
         setTimeout(() => { box.style.display = 'none'; }, 4000);
     }
+
+    // ====== Therapist Verification ======
+    let appData = {}; // Store step-1 answers
+
+    function loadTherapistSection(role, uid) {
+        const section = document.getElementById('therapist-section');
+        if (role === 'admin' || role === 'Certified Therapist') {
+            section.style.display = 'none'; // already privileged
+            return;
+        }
+        section.style.display = 'block';
+
+        // Listen for this user's application status
+        onSnapshot(doc(db, "therapistApplications", uid), (snap) => {
+            const banner = document.getElementById('therapist-status-banner');
+            const formWrapper = document.getElementById('therapist-form-wrapper');
+
+            if (!snap.exists()) {
+                banner.style.display = 'none';
+                formWrapper.style.display = 'block';
+                return;
+            }
+            const d = snap.data();
+
+            if (d.status === 'pending') {
+                banner.style.display = 'block';
+                banner.innerHTML = `
+                    <div style="background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.4);
+                        border-radius:12px; padding:14px 16px; display:flex; align-items:flex-start; gap:12px;">
+                        <span style="font-size:1.4rem;">⏳</span>
+                        <div>
+                            <strong style="color:#ca8a04;">Application Under Review</strong>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px;">
+                                Your therapist verification application is being reviewed by an admin. We'll let you know here once a decision has been made.
+                            </p>
+                        </div>
+                    </div>`;
+                formWrapper.style.display = 'none';
+
+            } else if (d.status === 'approved') {
+                banner.style.display = 'block';
+                banner.innerHTML = `
+                    <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.4);
+                        border-radius:12px; padding:14px 16px; display:flex; align-items:flex-start; gap:12px; animation: fadeIn 0.5s ease;">
+                        <span style="font-size:1.4rem;">✅</span>
+                        <div>
+                            <strong style="color:#16a34a;">You are now a Certified Therapist!</strong>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px;">
+                                Your application was approved. Your account has been upgraded — reload the page to see your new badge.
+                            </p>
+                        </div>
+                    </div>`;
+                formWrapper.style.display = 'none';
+
+            } else if (d.status === 'denied') {
+                banner.style.display = 'block';
+                banner.innerHTML = `
+                    <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3);
+                        border-radius:12px; padding:14px 16px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <span style="font-size:1.4rem;">❌</span>
+                            <strong style="color:#ef4444;">Application Not Approved</strong>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">
+                            Unfortunately your application was not approved by the admin team.
+                        </p>
+                        <div style="background:rgba(0,0,0,0.05); border-radius:8px; padding:10px 14px; font-size:0.88rem; color:var(--text-primary);">
+                            <strong>Reason:</strong> ${d.denialReason || 'No reason provided.'}
+                        </div>
+                        <button onclick="window.resetApplication('${uid}')" style="margin-top:12px; background:var(--primary);
+                            color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.88rem;">
+                            Re-apply
+                        </button>
+                    </div>`;
+                formWrapper.style.display = 'none';
+            }
+        });
+    }
+
+    // Step 1 → Step 2 validation
+    window.appNextStep = function() {
+        const title = document.getElementById('app-title').value.trim();
+        const education = document.getElementById('app-education').value.trim();
+        const license = document.getElementById('app-license').value.trim();
+        const experience = document.getElementById('app-experience').value.trim();
+        const statement = document.getElementById('app-statement').value.trim();
+        if (!title || !education || !license || !statement || !experience) {
+            showAlert('Please fill in all fields before continuing.', 'error');
+            return;
+        }
+        appData = { title, education, license, experience, statement };
+        document.getElementById('app-step-1').style.display = 'none';
+        document.getElementById('app-step-2').style.display = 'block';
+    };
+
+    // Upload file to Firebase Storage and return download URL
+    async function uploadFile(file, path, progressEl, label) {
+        return new Promise((resolve, reject) => {
+            const storageRef = ref(storage, path);
+            const task = uploadBytesResumable(storageRef, file);
+            task.on('state_changed',
+                (snap) => {
+                    const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+                    progressEl.textContent = `Uploading ${label}... ${pct}%`;
+                },
+                reject,
+                async () => resolve(await getDownloadURL(task.snapshot.ref))
+            );
+        });
+    }
+
+    // Submit the full application
+    window.submitTherapistApplication = async function() {
+        const degreeFile = document.getElementById('app-degree-file').files[0];
+        const idFile = document.getElementById('app-id-file').files[0];
+        const progress = document.getElementById('upload-progress');
+        const submitBtn = document.getElementById('app-submit-btn');
+
+        if (!degreeFile || !idFile) {
+            showAlert('Please upload both your degree certificate and photo ID.', 'error');
+            return;
+        }
+        if (degreeFile.size > 10 * 1024 * 1024 || idFile.size > 10 * 1024 * 1024) {
+            showAlert('Each file must be under 10 MB.', 'error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Uploading...';
+        try {
+            const uid = currentUser.uid;
+            const degreeUrl = await uploadFile(degreeFile, `applications/${uid}/degree`, progress, 'degree');
+            const idUrl = await uploadFile(idFile, `applications/${uid}/photo_id`, progress, 'photo ID');
+            progress.textContent = 'Saving application...';
+
+            await setDoc(doc(db, "therapistApplications", uid), {
+                uid,
+                displayName: currentUser.displayName || 'Unknown',
+                email: currentUser.email,
+                ...appData,
+                degreeUrl,
+                idUrl,
+                status: 'pending',
+                submittedAt: Date.now()
+            });
+
+            progress.textContent = '';
+            showAlert('✅ Application submitted! You will be notified here once it has been reviewed.', 'success');
+        } catch (e) {
+            progress.textContent = '';
+            showAlert('Upload failed: ' + e.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Submit Application';
+        }
+    };
+
+    // Allow user to re-apply after denial
+    window.resetApplication = async function(uid) {
+        await setDoc(doc(db, "therapistApplications", uid), { status: 'reset' });
+        document.getElementById('therapist-form-wrapper').style.display = 'block';
+        document.getElementById('therapist-status-banner').style.display = 'none';
+        document.getElementById('app-step-1').style.display = 'block';
+        document.getElementById('app-step-2').style.display = 'none';
+    };
 </script>
 </body>
 </html>

@@ -514,6 +514,20 @@
         </table>
     </div>
 
+    <!-- Therapist Applications -->
+    <div class="section-card" style="border-color: rgba(119,53,133,0.3);">
+        <div class="section-card-header" style="border-bottom:1px solid rgba(119,53,133,0.2); background: rgba(119,53,133,0.04);">
+            <h2 style="color:#773585; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-user-md"></i>
+                Therapist Applications
+                <span id="app-count-badge" style="background:#773585; color:white; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:20px; min-width:22px; text-align:center;">0</span>
+            </h2>
+        </div>
+        <div id="applications-list" style="display:flex; flex-direction:column; gap:0;">
+            <div style="padding:2rem; text-align:center; color:var(--text-secondary);">Loading applications...</div>
+        </div>
+    </div>
+
 </div>
 
 <script type="module">
@@ -557,6 +571,7 @@
         loadUsers();
         loadPosts();
         listenForCrisisAlerts(); // Real-time listener
+        loadApplications();      // Therapist application review
     });
 
     // ---- Load Stats ----
@@ -794,6 +809,116 @@
             loadStats();
         } catch (e) {
             alert("Failed to delete post: " + e.message);
+        }
+    };
+
+    // ======= Therapist Applications =======
+    function loadApplications() {
+        const q = query(
+            collection(db, "therapistApplications"),
+            where("status", "==", "pending")
+        );
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById('applications-list');
+            const badge = document.getElementById('app-count-badge');
+            if (!list) return;
+
+            badge.textContent = snap.size;
+
+            if (snap.empty) {
+                list.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-secondary);">✅ No pending applications</div>';
+                return;
+            }
+
+            list.innerHTML = '';
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                const appId = docSnap.id; // Same as user's UID
+
+                const card = document.createElement('div');
+                card.style.cssText = 'border-bottom:1px solid var(--border); padding:1.25rem 1.5rem;';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                        <div>
+                            <strong style="font-size:1rem;">${d.displayName || 'Unknown'}</strong>
+                            <span style="font-size:0.8rem; color:var(--text-secondary); margin-left:8px;">${d.email || ''}</span>
+                        </div>
+                        <span style="font-size:0.75rem; color:var(--text-secondary);">${new Date(d.submittedAt || Date.now()).toLocaleDateString()}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:0.88rem;">
+                        <div><strong>Title:</strong> ${d.title || '—'}</div>
+                        <div><strong>License #:</strong> ${d.license || '—'}</div>
+                        <div><strong>Education:</strong> ${d.education || '—'}</div>
+                        <div><strong>Experience:</strong> ${d.experience || '—'} years</div>
+                    </div>
+                    <div style="font-size:0.88rem; margin-bottom:12px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px;">
+                        <strong>Statement:</strong> ${d.statement || '—'}
+                    </div>
+                    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                        <a href="${d.degreeUrl}" target="_blank"
+                            style="color:#008088; font-size:0.88rem; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px;">
+                            🎓 View Degree
+                        </a>
+                        <a href="${d.idUrl}" target="_blank"
+                            style="color:#773585; font-size:0.88rem; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px;">
+                            📄 View Photo ID
+                        </a>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <button onclick="window.approveApplication('${appId}')"
+                            style="background:rgba(34,197,94,0.1); color:#16a34a; border:1px solid rgba(34,197,94,0.4);
+                                   padding:7px 16px; border-radius:8px; font-size:0.88rem; font-weight:600; cursor:pointer;">
+                            ✅ Approve
+                        </button>
+                        <div id="deny-section-${appId}" style="display:flex; gap:6px; align-items:center; flex:1; flex-wrap:wrap;">
+                            <input id="deny-reason-${appId}" type="text" placeholder="Reason for denial (required)..."
+                                style="flex:1; padding:7px 12px; border-radius:8px; border:1px solid var(--border);
+                                       background:rgba(0,0,0,0.04); color:var(--text-primary); font-size:0.88rem; font-family:inherit; outline:none; min-width:180px;">
+                            <button onclick="window.denyApplication('${appId}')"
+                                style="background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3);
+                                       padding:7px 16px; border-radius:8px; font-size:0.88rem; font-weight:600; cursor:pointer;">
+                                ❌ Deny
+                            </button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        });
+    }
+
+    window.approveApplication = async function(appId) {
+        if (!confirm('Approve this therapist application? The user will be promoted to Certified Therapist.')) return;
+        try {
+            // Promote the user's role in the users collection
+            await updateDoc(doc(db, "users", appId), { role: 'Certified Therapist' });
+            // Mark application approved
+            await updateDoc(doc(db, "therapistApplications", appId), {
+                status: 'approved',
+                reviewedAt: Date.now()
+            });
+        } catch (e) {
+            alert("Approval failed: " + e.message);
+        }
+    };
+
+    window.denyApplication = async function(appId) {
+        const reasonInput = document.getElementById(`deny-reason-${appId}`);
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+        if (!reason) {
+            reasonInput.style.borderColor = '#ef4444';
+            reasonInput.placeholder = 'Reason is required before denying!';
+            return;
+        }
+        if (!confirm('Deny this application?')) return;
+        try {
+            await updateDoc(doc(db, "therapistApplications", appId), {
+                status: 'denied',
+                denialReason: reason,
+                reviewedAt: Date.now()
+            });
+        } catch (e) {
+            alert("Denial failed: " + e.message);
         }
     };
 </script>
