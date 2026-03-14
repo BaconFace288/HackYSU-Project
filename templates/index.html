@@ -9,82 +9,96 @@
     <link rel="stylesheet" href="/static/style.css">
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        // Apply theme immediately to prevent flash
-        if (localStorage.getItem('theme') === 'dark') {
-            document.documentElement.classList.add('dark-mode');
-        }
-    </script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar glass-panel">
+        
+        <!-- Top Header -->
+        <header class="app-header">
             <div class="brand">
-                <div class="logo">
-                     <i class="fa-solid fa-bolt"></i>
-                </div>
-                <h2>HealSpace</h2>
+                <div class="brand-icon">⚡</div>
+                <h1>HealSpace</h1>
             </div>
-            
             <div class="user-profile">
                 <div class="avatar">
-                    <img src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&rounded=true" alt="User Avatar">
+                    <img src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="User Avatar">
                 </div>
                 <div class="user-info">
-                    <h3>Guest User</h3>
-                    <span class="status online"><i class="fa-solid fa-circle"></i> Online</span>
+                    <h3>Loading...</h3>
                 </div>
             </div>
+        </header>
 
-            <div class="channels">
-                <h4>Channels</h4>
-                <ul>
-                    <li class="active"><i class="fa-solid fa-hashtag"></i> general</li>
-                    <li><i class="fa-solid fa-hashtag"></i> random</li>
-                </ul>
-                <h4 style="margin-top: 20px;">Preferences</h4>
-                <ul>
-                    <li onclick="window.location.href='/settings'"><i class="fa-solid fa-gear"></i> Settings</li>
-                </ul>
+        <!-- Board / Feed View -->
+        <main class="board-view" id="board-view">
+            <div class="board-header">
+                <h2>Community Support Feed</h2>
+                <button class="btn-primary" onclick="window.openCreateModal()">
+                    <span>+</span> New Post
+                </button>
             </div>
-        </aside>
-
-        <!-- Main Chat Area -->
-        <main class="chat-area glass-panel">
-            <header class="chat-header">
-                <div class="channel-info">
-                    <h2><i class="fa-solid fa-hashtag"></i> general</h2>
-                    <p>Welcome to the global chat room</p>
+            
+            <!-- Posts will be injected here -->
+            <div class="feed-container" id="feed-container">
+                <!-- Example Skeleton Card (removed when real data loads) -->
+                <div class="post-card">
+                    <h3>Loading Feed...</h3>
+                    <p>Connecting to Firebase FireStore to load community requests...</p>
                 </div>
-                <div class="header-actions">
-                    <button class="icon-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-                    <button class="icon-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+        </main>
+
+        <!-- Specific Chat Room View (Hidden by default) -->
+        <main class="room-view" id="room-view">
+            <header class="room-header">
+                <button class="btn-back" onclick="window.closeRoom()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <div class="room-header-info">
+                    <h2 id="room-title">Loading Room...</h2>
+                    <p id="room-host">Hosted by...</p>
                 </div>
             </header>
 
-            <div class="messages-container" id="messages-container">
-                <!-- Messages will be injected here by JS -->
-                <div class="message system-message">
-                    <p>Welcome to HealSpace! Start typing to connect.</p>
-                </div>
+            <div class="chat-area" id="messages-container">
+                <!-- Messages inject here -->
             </div>
 
             <div class="input-area">
-                <form id="chat-form" onsubmit="sendMessage(event)">
-                    <div class="input-wrapper">
-                        <button type="button" class="icon-btn attach-btn"><i class="fa-solid fa-paperclip"></i></button>
-                        <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
-                        <button type="button" class="icon-btn emoji-btn"><i class="fa-regular fa-face-smile"></i></button>
-                        <button type="submit" class="send-btn" id="send-btn">
-                            <i class="fa-solid fa-paper-plane"></i>
+                <form id="chat-form" onsubmit="window.sendMessage(event)">
+                    <div class="input-container">
+                        <i class="fas fa-paperclip" style="color:var(--text-secondary); margin-right:12px; font-size: 1.2rem;"></i>
+                        <input type="text" id="message-input" autocomplete="off" placeholder="Type a supportive message...">
+                        <i class="far fa-smile" style="color:var(--text-secondary); margin:0 12px; font-size: 1.2rem;"></i>
+                        <button type="submit" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </form>
             </div>
         </main>
-    </div>
 
+        <!-- Create Post Modal popup -->
+        <div class="modal-overlay" id="create-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create Support Request</h3>
+                    <button class="btn-close" onclick="window.closeCreateModal()">×</button>
+                </div>
+                <form onsubmit="window.submitPost(event)">
+                    <div class="form-group">
+                        <label>Topic Title</label>
+                        <input type="text" id="post-title" required placeholder="e.g., Seeking advice on exam stress">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="post-desc" required placeholder="Provide a little background on what you want to talk about..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">Post to Feed</button>
+                </form>
+            </div>
+        </div>
+    </div>
     <script type="module" src="/static/script.js"></script>
 </body>
 </html>
