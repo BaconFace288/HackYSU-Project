@@ -27,6 +27,7 @@ const roomHostEl = document.getElementById('room-host');
 
 let currentUser = null;
 let currentUserRole = 'user'; // persisted after auth
+let currentUserAgeRange = 'everyone'; // persisted after auth
 let currentRoomId = null;
 let unsubscribeMessages = null;
 let currentFeedFilter = 'all'; // 'all' | 'hosted'
@@ -35,10 +36,12 @@ let currentFeedFilter = 'all'; // 'all' | 'hosted'
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        // Fetch the user's role from Firestore
+        // Fetch the user's role and ageRange from Firestore
         const userSnap = await getDoc(doc(db, "users", user.uid));
-        const role = userSnap.exists() ? userSnap.data().role : "user";
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        const role = userData.role || "user";
         currentUserRole = role; // store globally
+        currentUserAgeRange = userData.ageRange || 'everyone'; // store globally
         setupUI(role);
         listenForPosts(); // Load the Community Feed immediately
         checkTherapistStatus(user.uid); // Watch for approval/denial notifications
@@ -185,13 +188,19 @@ function renderFeed(snapshot) {
         docs = docs.filter(d => d.data().hostUid === currentUser.uid);
     }
 
+    // Filter by audience: show post if audience is 'everyone' OR matches the viewer's age range
+    docs = docs.filter(d => {
+        const audience = d.data().audience || 'everyone';
+        return audience === 'everyone' || audience === currentUserAgeRange;
+    });
+
     if (docs.length === 0) {
         const emptyMsg = currentFeedFilter === 'hosted'
             ? 'You are not currently hosting any chats.'
-            : 'No active support requests. Be the first to create a post!';
+            : 'No posts match your age range yet. Be the first to create one!';
         feedContainer.innerHTML = `
             <div class="post-card" style="grid-column: 1 / -1; text-align: center; background: transparent; border: 2px dashed var(--border);">
-                <h3 style="color: var(--text-secondary);">${currentFeedFilter === 'hosted' ? '🛡️ No Hosted Chats' : 'No active support requests'}</h3>
+                <h3 style="color: var(--text-secondary);">${currentFeedFilter === 'hosted' ? '🛡️ No Hosted Chats' : 'No posts for your age range'}</h3>
                 <p>${emptyMsg}</p>
             </div>
         `;
@@ -203,6 +212,12 @@ function renderFeed(snapshot) {
         const data = docSnap.data();
         const isPending = data.status === 'pending';
         const canHost = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
+        const audience = data.audience || 'everyone';
+        const audienceLabel = audience === 'everyone' ? '👥 Everyone' : `🎯 ${audience}`;
+        const audienceBadge = `<span style="font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:20px;
+            background:rgba(0,128,136,0.1); color:#008088; border:1px solid rgba(0,128,136,0.25); white-space:nowrap;">
+            ${audienceLabel}
+        </span>`;
 
         const card = document.createElement('div');
         card.classList.add('post-card');
@@ -224,6 +239,7 @@ function renderFeed(snapshot) {
                         <span class="host-name">
                             <i class="fas fa-user-circle"></i> ${data.hostName || 'Anonymous'}
                         </span>
+                        ${audienceBadge}
                         ${canHost
                     ? `<button onclick="window.hostPost('${postId}', event)"
                                 style="background: linear-gradient(135deg,#773585,#008088); color:white; border:none;
@@ -245,7 +261,10 @@ function renderFeed(snapshot) {
                         <span class="host-name">
                             <i class="fas fa-user-circle"></i> ${data.hostName}
                         </span>
-                        <span>Click to join chat →</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${audienceBadge}
+                            <span>Click to join chat →</span>
+                        </div>
                     </div>
                 `;
         }
@@ -262,6 +281,8 @@ window.closeCreateModal = function () {
     createModal.style.display = 'none';
     document.getElementById('post-title').value = '';
     document.getElementById('post-desc').value = '';
+    const audienceSel = document.getElementById('post-audience');
+    if (audienceSel) audienceSel.value = 'everyone';
 }
 
 window.submitPost = async function (event) {
@@ -269,6 +290,8 @@ window.submitPost = async function (event) {
 
     const title = document.getElementById('post-title').value.trim();
     const desc = document.getElementById('post-desc').value.trim();
+    const audienceEl = document.getElementById('post-audience');
+    const audience = audienceEl ? audienceEl.value : 'everyone';
 
     if (!title || !desc) return;
 
@@ -291,6 +314,7 @@ window.submitPost = async function (event) {
             creatorName: currentUser.displayName || 'Anonymous',
             creatorUid: currentUser.uid,
             status: status,
+            audience: audience,
             createdAt: Date.now()
         });
 

@@ -14,7 +14,7 @@ import {
 const ADMIN_NAMES = ["BaconFace288"];
 
 // Creates or ensures a user profile doc exists in Firestore
-async function ensureUserDoc(user) {
+async function ensureUserDoc(user, ageRange) {
     const userRef = doc(db, "users", user.uid);
     const snap = await getDoc(userRef);
 
@@ -29,6 +29,7 @@ async function ensureUserDoc(user) {
             displayName: user.displayName || "Anonymous",
             email: user.email,
             role: role,
+            ageRange: ageRange || "18-24",
             createdAt: Date.now()
         });
     } else {
@@ -84,7 +85,7 @@ window.handleLogin = async function(e) {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         // Ensure their Firestore profile exists and check for admin promotion
-        await ensureUserDoc(userCredential.user);
+        await ensureUserDoc(userCredential.user, null);
         window.location.href = '/';
     } catch (err) {
         let errorMsg = 'Login failed. Please verify credentials.';
@@ -100,6 +101,12 @@ window.handleRegister = async function(e) {
     const username = document.getElementById('reg-username').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
+    const ageRange = document.getElementById('reg-age-range').value;
+
+    if (!ageRange) {
+        showError('Please select your age range.');
+        return;
+    }
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -108,13 +115,14 @@ window.handleRegister = async function(e) {
             displayName: username
         });
 
-        // Create the Firestore user profile with role
-        await ensureUserDoc({ ...userCredential.user, displayName: username });
+        // Create the Firestore user profile with role and age range
+        await ensureUserDoc({ ...userCredential.user, displayName: username }, ageRange);
         
         showSuccess('Account created! You can now log in.');
         document.getElementById('reg-username').value = '';
         document.getElementById('reg-email').value = '';
         document.getElementById('reg-password').value = '';
+        document.getElementById('reg-age-range').selectedIndex = 0;
         setTimeout(() => window.switchTab('login'), 2000);
     } catch (err) {
         let errorMsg = 'Registration failed.';
