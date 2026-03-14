@@ -21,6 +21,10 @@ async def get_settings(request: Request):
 async def get_admin(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
 
+@app.get("/conversations", response_class=HTMLResponse)
+async def get_conversations(request: Request):
+    return templates.TemplateResponse("conversations.html", {"request": request})
+
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})

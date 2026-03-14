@@ -529,8 +529,11 @@
         onSnapshot,
         query,
         where,
-        orderBy
+        orderBy,
+        addDoc
     } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    let currentAdminUser = null;
 
     // ---- Auth Guard: Only admins may enter ----
     onAuthStateChanged(auth, async (user) => {
@@ -538,6 +541,7 @@
             window.location.href = '/login';
             return;
         }
+        currentAdminUser = user;
 
         const userRef = doc(db, "users", user.uid);
         const snap = await getDoc(userRef);
@@ -620,9 +624,15 @@
                             <span class="crisis-time">${timeAgo}</span>
                         </div>
                         <div class="crisis-message">${highlightedText}</div>
-                        <button class="dismiss-btn" onclick="dismissAlert('${flagId}')">
-                            ✓ Mark as Resolved
-                        </button>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="dismiss-btn" onclick="dismissAlert('${flagId}')">
+                                ✓ Mark as Resolved
+                            </button>
+                            <button class="dismiss-btn" onclick="startIntervention('${flagId}', '${escapeJs(d.uid)}', '${escapeJs(d.displayName || 'User')}')"
+                                style="color: #773585; border-color: rgba(119,53,133,0.4); background: rgba(119,53,133,0.08);">
+                                💬 Intervene
+                            </button>
+                        </div>
                     </div>
                 `;
                 list.appendChild(alertEl);
@@ -639,6 +649,43 @@
             alert("Could not dismiss alert: " + e.message);
         }
     };
+
+    // ---- Start 1-on-1 Intervention ----
+    window.startIntervention = async function(flagId, userUid, userName) {
+        if (!currentAdminUser) return;
+        try {
+            // Check if a conversation already exists for this flag
+            const convRef = await addDoc(collection(db, "conversations"), {
+                adminUid: currentAdminUser.uid,
+                adminName: currentAdminUser.displayName || 'Admin',
+                userUid: userUid,
+                userName: userName,
+                fromCrisis: true,
+                flagId: flagId,
+                participantUids: [currentAdminUser.uid, userUid],
+                lastMessage: 'Conversation started by admin',
+                createdAt: Date.now()
+            });
+            // Send the first message from the admin automatically
+            await addDoc(collection(db, "conversations", convRef.id, "messages"), {
+                text: `Hi ${userName}, I\'m from the HealSpace support team. I noticed your message and wanted to check in. How are you doing right now?`,
+                senderUid: currentAdminUser.uid,
+                senderName: currentAdminUser.displayName || 'Admin',
+                senderRole: 'admin',
+                createdAt: Date.now()
+            });
+            // Dismiss the flag
+            await updateDoc(doc(db, "flaggedMessages", flagId), { dismissed: true });
+            // Open the conversation in a new tab
+            window.open(`/conversations?conv=${convRef.id}`, '_blank');
+        } catch (e) {
+            alert("Could not start intervention: " + e.message);
+        }
+    };
+
+    function escapeJs(str) {
+        return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
 
     function timeSince(ts) {
         const seconds = Math.floor((Date.now() - ts) / 1000);

@@ -66,16 +66,28 @@ function setupUI(role) {
         if (userNameSpan) userNameSpan.parentElement.appendChild(badgeEl);
     }
     
-    // Show admin panel link in header for admins
-    if (role === 'admin') {
-        const header = document.querySelector('.app-header');
-        const adminLink = document.createElement('a');
-        adminLink.href = '/admin';
-        adminLink.innerHTML = '<i class="fas fa-shield-halved"></i> Admin';
-        adminLink.style.cssText = 'color: #773585; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(119,53,133,0.3); background: rgba(119,53,133,0.08); transition: background 0.2s;';
-        adminLink.onmouseover = () => adminLink.style.background = 'rgba(119,53,133,0.16)';
-        adminLink.onmouseout = () => adminLink.style.background = 'rgba(119,53,133,0.08)';
-        if (header) header.insertBefore(adminLink, header.querySelector('.user-profile'));
+    // Build header nav links
+    const headerNav = document.getElementById('header-nav');
+    if (headerNav) {
+        // Conversations link (all users)
+        const convLink = document.createElement('a');
+        convLink.href = '/conversations';
+        convLink.innerHTML = '<i class="fas fa-comments"></i> Conversations';
+        convLink.style.cssText = 'color: #008088; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(0,128,136,0.3); background: rgba(0,128,136,0.08); transition: background 0.2s;';
+        convLink.onmouseover = () => convLink.style.background = 'rgba(0,128,136,0.16)';
+        convLink.onmouseout = () => convLink.style.background = 'rgba(0,128,136,0.08)';
+        headerNav.appendChild(convLink);
+
+        // Admin link (admins only)
+        if (role === 'admin') {
+            const adminLink = document.createElement('a');
+            adminLink.href = '/admin';
+            adminLink.innerHTML = '<i class="fas fa-shield-halved"></i> Admin';
+            adminLink.style.cssText = 'color: #773585; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(119,53,133,0.3); background: rgba(119,53,133,0.08); transition: background 0.2s;';
+            adminLink.onmouseover = () => adminLink.style.background = 'rgba(119,53,133,0.16)';
+            adminLink.onmouseout = () => adminLink.style.background = 'rgba(119,53,133,0.08)';
+            headerNav.appendChild(adminLink);
+        }
     }
     
     // Profile click → settings

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealSpace - Conversations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+    <style>
+        body {
+            overflow: hidden;
+        }
+
+        /* Full-height split layout */
+        .conversations-layout {
+            display: flex;
+            flex: 1;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ---- Left Sidebar: Inbox ---- */
+        .inbox-sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        .inbox-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .inbox-header a {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .inbox-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .inbox-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .inbox-empty {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .inbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .inbox-item:hover, .inbox-item.active {
+            background: rgba(0, 128, 136, 0.08);
+        }
+
+        .inbox-item.active {
+            border-left: 3px solid var(--primary);
+        }
+
+        .inbox-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .inbox-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .inbox-item-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .inbox-item-preview {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+
+        .inbox-crisis-badge {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            white-space: nowrap;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        /* ---- Right Panel: Chat Thread ---- */
+        .thread-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .thread-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            gap: 12px;
+        }
+
+        .thread-empty i {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        .thread-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        .thread-header-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+        }
+
+        .thread-header-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .thread-header-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Crisis context banner */
+        .crisis-context-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 1.5rem;
+            background: rgba(239, 68, 68, 0.06);
+            border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+            font-size: 0.85rem;
+        }
+
+        .crisis-context-banner .crisis-icon { font-size: 1rem; margin-top: 1px; }
+        .crisis-context-banner .crisis-text { color: var(--text-secondary); }
+        .crisis-context-banner strong { color: #ef4444; }
+
+        /* Messages: admin messages appear first (pinned at top) and styled distinctly */
+        .thread-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Admin messages: pinned styling (purple/teal accent) */
+        .msg-admin-pinned {
+            background: linear-gradient(135deg, rgba(119,53,133,0.08), rgba(0,128,136,0.06));
+            border: 1px solid rgba(119, 53, 133, 0.25);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .msg-admin-pinned .admin-banner-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #773585;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .msg-admin-pinned .admin-banner-text {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        /* Regular message bubbles */
+        .conv-message {
+            max-width: 70%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .conv-message.self { align-self: flex-end; }
+        .conv-message.other { align-self: flex-start; }
+        .conv-message.admin-msg { align-self: flex-start; }
+
+        .conv-message-sender {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .admin-tag {
+            background: rgba(119, 53, 133, 0.12);
+            color: #773585;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 10px;
+            border: 1px solid rgba(119, 53, 133, 0.2);
+        }
+
+        .conv-message-bubble {
+            padding: 10px 15px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .conv-message.self .conv-message-bubble {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 18px 18px 4px 18px;
+        }
+
+        .conv-message.admin-msg .conv-message-bubble {
+            background: linear-gradient(135deg, rgba(119,53,133,0.12), rgba(0,128,136,0.08));
+            border: 1px solid rgba(119, 53, 133, 0.25);
+            border-radius: 18px 18px 18px 4px;
+            color: var(--text-primary);
+        }
+
+        .conv-message.other .conv-message-bubble {
+            border-radius: 18px 18px 18px 4px;
+        }
+
+        /* Input bar */
+        .thread-input-area {
+            padding: 1.25rem 1.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .thread-input-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 6px 14px;
+            gap: 8px;
+            transition: border-color 0.2s;
+        }
+
+        html.dark-mode .thread-input-container {
+            background: rgba(255,255,255, 0.03);
+        }
+
+        .thread-input-container:focus-within {
+            border-color: var(--primary);
+        }
+
+        .thread-input-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            padding: 8px 4px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .thread-send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .thread-send-btn:hover { background: var(--primary-hover); }
+    </style>
+</head>
+<body>
+<div class="conversations-layout">
+
+    <!-- Left: Inbox Sidebar -->
+    <div class="inbox-sidebar">
+        <div class="inbox-header">
+            <a href="/"><i class="fas fa-arrow-left"></i></a>
+            <h2>Conversations</h2>
+        </div>
+        <div class="inbox-list" id="inbox-list">
+            <div class="inbox-empty">Loading conversations...</div>
+        </div>
+    </div>
+
+    <!-- Right: Thread Panel -->
+    <div class="thread-panel" id="thread-panel">
+        <div class="thread-empty" id="thread-empty">
+            <i class="fas fa-comments"></i>
+            <p>Select a conversation to start chatting</p>
+        </div>
+
+        <!-- Thread Content (hidden until a conv is selected) -->
+        <div id="thread-content" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+            <div class="thread-header" id="thread-header">
+                <!-- Populated dynamically -->
+            </div>
+            <!-- Crisis context banner (shown only when convo was started from a crisis flag) -->
+            <div id="crisis-banner" class="crisis-context-banner" style="display:none;">
+                <span class="crisis-icon">🚨</span>
+                <span class="crisis-text">This conversation was started in response to a <strong>crisis alert</strong>. Please respond with care.</span>
+            </div>
+            <div class="thread-messages" id="thread-messages"></div>
+            <div class="thread-input-area">
+                <form id="thread-form" onsubmit="sendConvMessage(event)">
+                    <div class="thread-input-container">
+                        <input type="text" id="conv-input" placeholder="Type a supportive message..." autocomplete="off">
+                        <button type="submit" class="thread-send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { auth, db } from '/static/firebase.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    import {
+        collection, addDoc, query, where, onSnapshot,
+        orderBy, doc, getDoc, serverTimestamp, updateDoc, arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    let currentUser = null;
+    let currentUserRole = 'user';
+    let activeConvId = null;
+    let unsubMessages = null;
+
+    // ------ Auth Guard ------
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = '/login'; return; }
+        currentUser = user;
+
+        // Get role
+        const snap = await getDoc(doc(db, "users", user.uid));
+        currentUserRole = snap.exists() ? snap.data().role : 'user';
+
+        loadInbox();
+
+        // If opened with ?conv=ID (from admin panel intervention link)
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('conv')) {
+            openConversation(params.get('conv'));
+        }
+    });
+
+    // ------ Load Inbox ------
+    function loadInbox() {
+        const q = query(
+            collection(db, "conversations"),
+            where("participantUids", "array-contains", currentUser.uid)
+        );
+
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById('inbox-list');
+            if (snap.empty) {
+                list.innerHTML = '<div class="inbox-empty">No conversations yet.<br><small>Admins can start a conversation with you from the crisis alerts panel.</small></div>';
+                return;
+            }
+
+            // Sort by most recent
+            const convs = snap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            list.innerHTML = '';
+            convs.forEach(conv => {
+                const otherName = conv.adminUid === currentUser.uid ? conv.userName : conv.adminName;
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName || 'U')}&background=773585&color=fff&rounded=true`;
+                const isActive = conv.id === activeConvId;
+
+                const item = document.createElement('div');
+                item.className = `inbox-item ${isActive ? 'active' : ''}`;
+                item.dataset.convId = conv.id;
+                item.onclick = () => openConversation(conv.id);
+                item.innerHTML = `
+                    <img class="inbox-avatar" src="${avatarUrl}" alt="${otherName}">
+                    <div class="inbox-item-info">
+                        <div class="inbox-item-name">${otherName || 'Unknown'}</div>
+                        <div class="inbox-item-preview">${conv.lastMessage || 'No messages yet'}</div>
+                    </div>
+                    ${conv.fromCrisis ? '<span class="inbox-crisis-badge">🚨 Crisis</span>' : ''}
+                `;
+                list.appendChild(item);
+            });
+        });
+    }
+
+    // ------ Open a Conversation ------
+    window.openConversation = async function(convId) {
+        activeConvId = convId;
+
+        // Highlight in sidebar
+        document.querySelectorAll('.inbox-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.convId === convId);
+        });
+
+        // Unsubscribe old listener
+        if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+
+        // Fetch conv metadata
+        const convSnap = await getDoc(doc(db, "conversations", convId));
+        if (!convSnap.exists()) return;
+        const conv = convSnap.data();
+
+        const otherName = conv.adminUid === currentUser.uid ? conv.userName : conv.adminName;
+        const otherBg = conv.adminUid === currentUser.uid ? '475569' : '773585';
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(otherName || 'U')}&background=${otherBg}&color=fff&rounded=true`;
+
+        // Show thread UI
+        document.getElementById('thread-empty').style.display = 'none';
+        const threadContent = document.getElementById('thread-content');
+        threadContent.style.display = 'flex';
+
+        // Build header
+        document.getElementById('thread-header').innerHTML = `
+            <img class="thread-header-avatar" src="${avatarUrl}" alt="${otherName}">
+            <div class="thread-header-info">
+                <h3>${otherName || 'Unknown'}</h3>
+                <p>${conv.fromCrisis ? '🚨 Crisis Intervention Chat' : 'Private Conversation'}</p>
+            </div>
+        `;
+
+        // Show crisis banner if relevant
+        document.getElementById('crisis-banner').style.display = conv.fromCrisis ? 'flex' : 'none';
+
+        // Listen for messages
+        const msgContainer = document.getElementById('thread-messages');
+        msgContainer.innerHTML = '';
+
+        const msgQuery = query(
+            collection(db, "conversations", convId, "messages"),
+            orderBy("createdAt", "asc")
+        );
+
+        unsubMessages = onSnapshot(msgQuery, (snap) => {
+            snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    renderMessage(change.doc.data());
+                }
+            });
+        }, err => console.error("Message listener error:", err));
+    };
+
+    // ------ Render a Message ------
+    function renderMessage(data) {
+        const container = document.getElementById('thread-messages');
+        const isSelf = data.senderUid === currentUser.uid;
+        const isAdmin = data.senderRole === 'admin';
+
+        const msgEl = document.createElement('div');
+
+        if (isAdmin) {
+            msgEl.className = `conv-message ${isSelf ? 'self' : 'admin-msg'}`;
+            msgEl.innerHTML = `
+                ${!isSelf ? `<div class="conv-message-sender">
+                    ${data.senderName || 'Admin'} <span class="admin-tag">🛡️ Admin</span>
+                </div>` : ''}
+                <div class="conv-message-bubble">${escapeHtml(data.text)}</div>
+            `;
+        } else {
+            msgEl.className = `conv-message ${isSelf ? 'self' : 'other'}`;
+            msgEl.innerHTML = `
+                ${!isSelf ? `<div class="conv-message-sender">${data.senderName || 'User'}</div>` : ''}
+                <div class="conv-message-bubble">${escapeHtml(data.text)}</div>
+            `;
+        }
+
+        container.appendChild(msgEl);
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
+
+    // ------ Send Message ------
+    window.sendConvMessage = async function(e) {
+        e.preventDefault();
+        if (!activeConvId) return;
+        const input = document.getElementById('conv-input');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+
+        const msgData = {
+            text,
+            senderUid: currentUser.uid,
+            senderName: currentUser.displayName || 'Anonymous',
+            senderRole: currentUserRole,
+            createdAt: Date.now()
+        };
+
+        try {
+            await addDoc(collection(db, "conversations", activeConvId, "messages"), msgData);
+            // Update lastMessage preview
+            await updateDoc(doc(db, "conversations", activeConvId), {
+                lastMessage: `${currentUser.displayName}: ${text.slice(0, 60)}`
+            });
+        } catch (err) {
+            console.error("Send error:", err);
+            alert("Failed to send: " + err.message);
+        }
+    };
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+</script>
+</body>
+</html>
