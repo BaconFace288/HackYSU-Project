@@ -51,9 +51,9 @@ function setupUI() {
     const userProfile = document.querySelector(".user-profile");
     if(userProfile) {
         userProfile.style.cursor = 'pointer';
-        userProfile.title = "Click to log out";
+        userProfile.title = "Click to view settings";
         userProfile.onclick = () => {
-            signOut(auth);
+            window.location.href = '/settings';
         };
     }
 }
