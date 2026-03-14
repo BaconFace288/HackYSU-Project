@@ -372,12 +372,13 @@
 
         /* ---- Therapist Request Styles ---- */
         .request-cta {
-            margin: 0.75rem 1rem;
-            padding: 1rem;
+            margin: 0.6rem 0.75rem;
+            padding: 0.85rem;
             border-radius: 12px;
             background: linear-gradient(135deg, rgba(0,128,136,0.08), rgba(119,53,133,0.08));
             border: 1px solid rgba(0,128,136,0.25);
             text-align: center;
+            box-sizing: border-box;
         }
         .request-cta p {
             font-size: 0.82rem;
@@ -393,9 +394,10 @@
             background: linear-gradient(135deg, #008088, #773585);
             color: white;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             cursor: pointer;
             transition: opacity 0.2s;
+            box-sizing: border-box;
         }
         .request-cta-btn:hover { opacity: 0.88; }
         .request-form-area {
@@ -403,6 +405,7 @@
             flex-direction: column;
             gap: 8px;
             margin-top: 10px;
+            width: 100%;
         }
         .request-form-area textarea {
             width: 100%;
@@ -419,7 +422,7 @@
             box-sizing: border-box;
         }
         html.dark-mode .request-form-area textarea { background: rgba(255,255,255,0.05); }
-        .request-row { display: flex; gap: 8px; }
+        .request-row { display: flex; flex-direction: column; gap: 6px; }
         .request-pending-badge {
             display: inline-block;
             font-size: 0.7rem; font-weight: 700;
