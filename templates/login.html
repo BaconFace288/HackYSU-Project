@@ -34,8 +34,8 @@
             <!-- Login Form -->
             <form id="login-form" onsubmit="handleLogin(event)" class="auth-form">
                 <div class="input-group">
-                    <label for="login-username">Username</label>
-                    <input type="text" id="login-username" required placeholder="Enter username">
+                    <label for="login-username">Email</label>
+                    <input type="email" id="login-username" required placeholder="Enter email">
                 </div>
                 <div class="input-group">
                     <label for="login-password">Password</label>
@@ -47,8 +47,12 @@
             <!-- Register Form -->
             <form id="register-form" onsubmit="handleRegister(event)" class="auth-form" style="display: none;">
                 <div class="input-group">
-                    <label for="reg-username">Username</label>
+                    <label for="reg-username">Display Name</label>
                     <input type="text" id="reg-username" required placeholder="Choose a username">
+                </div>
+                <div class="input-group">
+                    <label for="reg-email">Email</label>
+                    <input type="email" id="reg-email" required placeholder="Enter your email">
                 </div>
                 <div class="input-group">
                     <label for="reg-password">Password</label>
@@ -59,6 +63,6 @@
         </div>
     </div>
 
-    <script src="/static/login.js"></script>
+    <script type="module" src="/static/login.js"></script>
 </body>
 </html>

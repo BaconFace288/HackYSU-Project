@@ -1,104 +1,118 @@
-const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const wsHost = window.location.host || "localhost:8000";
-
-// Auth Check
-const token = localStorage.getItem('healspace_token');
-const username = localStorage.getItem('healspace_username');
-
-if (!token) {
-    window.location.href = '/login';
-}
-
-const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws?token=${token}`);
+import { auth, db } from './firebase.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+import { 
+    collection, 
+    addDoc, 
+    query, 
+    orderBy, 
+    onSnapshot,
+    serverTimestamp,
+    limit
+} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 const messagesContainer = document.getElementById('messages-container');
 const messageInput = document.getElementById('message-input');
 
-// Update user avatar in UI to match their real username
-document.addEventListener("DOMContentLoaded", () => {
+let currentUser = null;
+
+// Auth Check
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        setupUI();
+        listenForMessages();
+    } else {
+        window.location.href = '/login';
+    }
+});
+
+function setupUI() {
+    // Update user avatar in UI to match their real username
     const avatarImg = document.querySelector(".avatar img");
-    if(avatarImg && username) {
-        avatarImg.src = `https://ui-avatars.com/api/?name=${username}&background=6366f1&color=fff&rounded=true`;
+    if(avatarImg && currentUser.displayName) {
+        avatarImg.src = `https://ui-avatars.com/api/?name=${currentUser.displayName}&background=6366f1&color=fff&rounded=true`;
     }
     const userNameSpan = document.querySelector(".user-info h3");
-    if(userNameSpan && username) {
-        userNameSpan.textContent = username;
+    if(userNameSpan && currentUser.displayName) {
+        userNameSpan.textContent = currentUser.displayName;
     }
     
-    // Add logout button functionality if we want
+    // Add logout button functionality
     const userProfile = document.querySelector(".user-profile");
     if(userProfile) {
         userProfile.style.cursor = 'pointer';
         userProfile.title = "Click to log out";
         userProfile.onclick = () => {
-            localStorage.removeItem('healspace_token');
-            localStorage.removeItem('healspace_username');
-            window.location.href = '/login';
+            signOut(auth);
         };
     }
-});
+}
 
-ws.onmessage = function(event) {
-    let messageData;
-    try {
-        messageData = JSON.parse(event.data);
-    } catch (e) {
-        // Fallback for simple text messages
-        messageData = {
-            id: 'unknown',
-            text: event.data
-        };
-    }
+function listenForMessages() {
+    // Listen to the 'messages' collection, ordered by time, limit 50
+    const q = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(50));
+    
+    // Clear the dummy message
+    messagesContainer.innerHTML = '';
+    
+    onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                appendMessage(change.doc.data());
+            }
+        });
+    });
+}
 
-    appendMessage(messageData);
-};
-
-function sendMessage(event) {
+window.sendMessage = async function(event) {
     event.preventDefault();
     const text = messageInput.value.trim();
     if (text === '') return;
     
-    // Create a JSON payload (we don't need to send id anymore, backend knows who we are)
-    const payload = {
-        text: text
-    };
-
-    ws.send(JSON.stringify(payload));
     messageInput.value = '';
     
     // Add small visual feedback on send button
     const btn = document.getElementById('send-btn');
-    btn.style.transform = 'scale(0.9)';
-    setTimeout(() => {
-        btn.style.transform = '';
-    }, 150);
+    if (btn) {
+        btn.style.transform = 'scale(0.9)';
+        setTimeout(() => { btn.style.transform = ''; }, 150);
+    }
+
+    try {
+        await addDoc(collection(db, "messages"), {
+            text: text,
+            uid: currentUser.uid,
+            displayName: currentUser.displayName,
+            createdAt: serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Error adding document: ", e);
+    }
 }
 
 function appendMessage(data) {
-    const isSelf = data.id === username;
+    // If it's a completely new message from the server that doesn't have a timestamp yet, 
+    // it's likely our local positive write.
+    const isSelf = data.uid === currentUser.uid;
     
-    // Create message element wrapper
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
     msgDiv.classList.add(isSelf ? 'self' : 'other');
 
-    // Create Sender name (only visible for others)
     if (!isSelf) {
         const senderDiv = document.createElement('div');
         senderDiv.classList.add('message-sender');
-        senderDiv.textContent = data.id;
+        senderDiv.textContent = data.displayName || 'Unknown';
         msgDiv.appendChild(senderDiv);
     }
 
-    // Create message content bubble
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('message-content');
-    contentDiv.textContent = data.text; // prevents XSS by using textContent
+    contentDiv.textContent = data.text;
 
     msgDiv.appendChild(contentDiv);
     messagesContainer.appendChild(msgDiv);
 
-    // Scroll to bottom with smooth behavior
     messagesContainer.scrollTo({
         top: messagesContainer.scrollHeight,
         behavior: 'smooth'
