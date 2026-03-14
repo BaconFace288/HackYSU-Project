@@ -1,11 +1,11 @@
 import { auth, db } from './firebase.js';
 import { containsProfanity } from './profanity.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { 
-    collection, 
-    addDoc, 
-    query, 
-    orderBy, 
+import {
+    collection,
+    addDoc,
+    query,
+    orderBy,
     onSnapshot,
     serverTimestamp,
     doc,
@@ -53,11 +53,11 @@ function setupUI(role) {
 
     // Update user avatar in UI to match their real username
     const avatarImg = document.querySelector(".avatar img");
-    if(avatarImg && currentUser.displayName) {
+    if (avatarImg && currentUser.displayName) {
         avatarImg.src = `https://ui-avatars.com/api/?name=${currentUser.displayName}&background=${bgColor}&color=fff&rounded=true`;
     }
     const userNameSpan = document.querySelector(".user-info h3");
-    if(userNameSpan && currentUser.displayName) {
+    if (userNameSpan && currentUser.displayName) {
         userNameSpan.textContent = currentUser.displayName;
     }
 
@@ -66,13 +66,13 @@ function setupUI(role) {
         const badgeEl = document.createElement('span');
         badgeEl.textContent = role === 'admin' ? '🛡️ Admin' : '🧠 Therapist';
         badgeEl.style.cssText = `font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
-            background: ${ role === 'admin' ? 'rgba(119,53,133,0.15)' : 'rgba(0,128,136,0.12)' };
-            color: ${ role === 'admin' ? '#773585' : '#008088' };
-            border: 1px solid ${ role === 'admin' ? 'rgba(119,53,133,0.3)' : 'rgba(0,128,136,0.3)' };
+            background: ${role === 'admin' ? 'rgba(119,53,133,0.15)' : 'rgba(0,128,136,0.12)'};
+            color: ${role === 'admin' ? '#773585' : '#008088'};
+            border: 1px solid ${role === 'admin' ? 'rgba(119,53,133,0.3)' : 'rgba(0,128,136,0.3)'};
             margin-left: 6px;`;
         if (userNameSpan) userNameSpan.parentElement.appendChild(badgeEl);
     }
-    
+
     // Build header nav links
     const headerNav = document.getElementById('header-nav');
     if (headerNav) {
@@ -96,10 +96,10 @@ function setupUI(role) {
             headerNav.appendChild(adminLink);
         }
     }
-    
+
     // Profile click → settings
     const userProfile = document.querySelector(".user-profile");
-    if(userProfile) {
+    if (userProfile) {
         userProfile.style.cursor = 'pointer';
         userProfile.title = "Click to view settings";
         userProfile.onclick = () => {
@@ -133,7 +133,7 @@ function setupUI(role) {
                     style="flex:1; padding: 7px 14px; border-radius: 7px; border: none; cursor: pointer;
                            font-size: 0.88rem; font-weight: 600; background: transparent; color: var(--text-secondary);
                            transition: all 0.2s;">
-                    ${ role === 'admin' ? '🛡️' : '🧠' } My Hosted Chats
+                    ${role === 'admin' ? '🛡️' : '🧠'} My Hosted Chats
                 </button>
             `;
             // Insert tab strip below the h2/button row
@@ -144,7 +144,7 @@ function setupUI(role) {
 }
 
 // Switch feed tab (all | hosted)
-window.setFeedTab = function(tab) {
+window.setFeedTab = function (tab) {
     currentFeedFilter = tab;
     const tabAll = document.getElementById('tab-all');
     const tabHosted = document.getElementById('tab-hosted');
@@ -160,7 +160,7 @@ window.setFeedTab = function(tab) {
 // =========== Board / Feed Logic ===========
 function listenForPosts() {
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    
+
     onSnapshot(q, (snapshot) => {
         window._latestFeedSnapshot = snapshot; // store for re-rendering on tab switch
         renderFeed(snapshot);
@@ -199,19 +199,19 @@ function renderFeed(snapshot) {
     }
 
     docs.forEach((docSnap) => {
-            const postId = docSnap.id;
-            const data = docSnap.data();
-            const isPending = data.status === 'pending';
-            const canHost = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
+        const postId = docSnap.id;
+        const data = docSnap.data();
+        const isPending = data.status === 'pending';
+        const canHost = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
 
-            const card = document.createElement('div');
-            card.classList.add('post-card');
-            card.dataset.postId = postId;
+        const card = document.createElement('div');
+        card.classList.add('post-card');
+        card.dataset.postId = postId;
 
-            if (isPending) {
-                // Locked card — can't be joined yet
-                card.style.cssText = 'cursor: default; opacity: 0.85;';
-                card.innerHTML = `
+        if (isPending) {
+            // Locked card — can't be joined yet
+            card.style.cssText = 'cursor: default; opacity: 0.85;';
+            card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 6px;">
                         <h3 style="margin:0;">${data.title}</h3>
                         <span style="font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:20px;
@@ -224,21 +224,21 @@ function renderFeed(snapshot) {
                         <span class="host-name">
                             <i class="fas fa-user-circle"></i> ${data.hostName || 'Anonymous'}
                         </span>
-                        ${ canHost
-                            ? `<button onclick="window.hostPost('${postId}', event)"
+                        ${canHost
+                    ? `<button onclick="window.hostPost('${postId}', event)"
                                 style="background: linear-gradient(135deg,#773585,#008088); color:white; border:none;
                                         padding:6px 14px; border-radius:8px; font-size:0.85rem; font-weight:600;
                                         cursor:pointer; display:flex; align-items:center; gap:6px;">
                                     🛡️ Host this Chat
                                </button>`
-                            : `<span style="color:var(--text-secondary); font-size:0.85rem;">Waiting for an admin or therapist to host</span>`
-                        }
+                    : `<span style="color:var(--text-secondary); font-size:0.85rem;">Waiting for an admin or therapist to host</span>`
+                }
                     </div>
                 `;
-            } else {
-                // Active card — joinable by anyone
-                card.onclick = () => window.openRoom(postId, data.title, data.hostName);
-                card.innerHTML = `
+        } else {
+            // Active card — joinable by anyone
+            card.onclick = () => window.openRoom(postId, data.title, data.hostName);
+            card.innerHTML = `
                     <h3>${data.title}</h3>
                     <p>${data.description}</p>
                     <div class="post-meta">
@@ -248,30 +248,30 @@ function renderFeed(snapshot) {
                         <span>Click to join chat →</span>
                     </div>
                 `;
-            }
+        }
 
-            feedContainer.appendChild(card);
-        });
+        feedContainer.appendChild(card);
+    });
 }
 
-window.openCreateModal = function() {
+window.openCreateModal = function () {
     createModal.style.display = 'flex';
 }
 
-window.closeCreateModal = function() {
+window.closeCreateModal = function () {
     createModal.style.display = 'none';
     document.getElementById('post-title').value = '';
     document.getElementById('post-desc').value = '';
 }
 
-window.submitPost = async function(event) {
+window.submitPost = async function (event) {
     event.preventDefault();
-    
+
     const title = document.getElementById('post-title').value.trim();
     const desc = document.getElementById('post-desc').value.trim();
-    
-    if(!title || !desc) return;
-    
+
+    if (!title || !desc) return;
+
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.textContent = 'Posting...';
@@ -293,7 +293,7 @@ window.submitPost = async function(event) {
             status: status,
             createdAt: Date.now()
         });
-        
+
         window.closeCreateModal();
         if (!isPrivileged) {
             alert('✅ Your support request has been posted! A therapist or admin will volunteer to host it shortly.');
@@ -308,7 +308,7 @@ window.submitPost = async function(event) {
 }
 
 // Admin/Therapist volunteers to host a pending post
-window.hostPost = async function(postId, event) {
+window.hostPost = async function (postId, event) {
     event.stopPropagation(); // don't let it bubble to the card
     try {
         await updateDoc(doc(db, "posts", postId), {
@@ -323,30 +323,30 @@ window.hostPost = async function(postId, event) {
 
 // =========== Chat Room Logic ===========
 
-window.openRoom = function(postId, title, hostName) {
+window.openRoom = function (postId, title, hostName) {
     currentRoomId = postId;
-    
+
     // Update UI headers
     roomTitleEl.textContent = title;
     roomHostEl.textContent = `Hosted by ${hostName}`;
-    
+
     // Switch Views
     boardView.style.display = 'none';
     roomView.style.display = 'flex';
-    
+
     // Connect to specific room messages
     connectToRoomChat(postId);
 }
 
-window.closeRoom = function() {
+window.closeRoom = function () {
     currentRoomId = null;
-    
+
     // Stop listening to the old room to save bandwidth and prevent memory leaks
     if (unsubscribeMessages) {
         unsubscribeMessages();
         unsubscribeMessages = null;
     }
-    
+
     // Switch Views back
     roomView.style.display = 'none';
     boardView.style.display = 'block';
@@ -356,9 +356,9 @@ function connectToRoomChat(roomId) {
     // Reference: posts/{post_id}/messages
     const messagesRef = collection(db, "posts", roomId, "messages");
     const q = query(messagesRef, orderBy("createdAt", "asc"));
-    
+
     messagesContainer.innerHTML = '';
-    
+
     // Keep reference to the listener so we can unsubscribe when leaving the room
     unsubscribeMessages = onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
@@ -391,9 +391,9 @@ function checkForCrisisKeywords(text) {
 }
 window.checkForCrisisKeywords = checkForCrisisKeywords;
 
-window.sendMessage = async function(event) {
+window.sendMessage = async function (event) {
     event.preventDefault();
-    if(!currentRoomId) return;
+    if (!currentRoomId) return;
 
     const text = messageInput.value.trim();
     if (text === '' && !pendingImageData) return;   // need text OR image
@@ -455,7 +455,7 @@ window.sendMessage = async function(event) {
                 id: currentRoomId,
                 title: roomTitleEl.textContent || 'Unnamed Room'
             })
-        }).catch(() => {}); // Non-critical, ignore failures
+        }).catch(() => { }); // Non-critical, ignore failures
 
         // ---- Crisis Detection ----
         const triggeredKeyword = checkForCrisisKeywords(text);
@@ -482,7 +482,7 @@ window.sendMessage = async function(event) {
 
 function appendMessage(data) {
     const isSelf = data.uid === currentUser.uid;
-    
+
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
     msgDiv.classList.add(isSelf ? 'self' : 'other');
@@ -502,8 +502,8 @@ function appendMessage(data) {
         const img = document.createElement('img');
         img.src = data.imageData;
         img.alt = 'shared image';
-        img.style.cssText = 'max-width:220px; max-height:220px; border-radius:10px; display:block; margin-bottom: data.text ? 6px : 0; cursor:zoom-in;';
-        img.onclick = () => { window.open(data.imageData, '_blank'); };
+        img.style.cssText = 'max-width:220px; max-height:220px; border-radius:10px; display:block; margin-bottom:' + (data.text ? '6px' : '0') + '; cursor:zoom-in;';
+        img.onclick = () => { showImageLightbox(data.imageData); };
         contentDiv.appendChild(img);
     }
     if (data.text) {
@@ -520,10 +520,42 @@ function appendMessage(data) {
     });
 }
 
+// =========== Image Lightbox ===========
+function showImageLightbox(src) {
+    let overlay = document.getElementById('image-lightbox');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'image-lightbox';
+        overlay.style.cssText = `
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.8); z-index:99999;
+            display:flex; align-items:center; justify-content:center;
+            cursor:zoom-out; backdrop-filter:blur(6px);
+            animation: fadeIn 0.25s ease;
+        `;
+        overlay.onclick = () => { overlay.style.display = 'none'; };
+        document.body.appendChild(overlay);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') overlay.style.display = 'none';
+        });
+    }
+    overlay.innerHTML = `
+        <img src="${src}" alt="Full size image" style="
+            max-width:90vw; max-height:90vh; border-radius:12px;
+            box-shadow:0 8px 40px rgba(0,0,0,0.5); object-fit:contain;
+        ">
+        <button onclick="event.stopPropagation(); document.getElementById('image-lightbox').style.display='none';"
+            style="position:absolute; top:1rem; right:1rem; background:rgba(255,255,255,0.15);
+                   border:none; color:white; width:36px; height:36px; border-radius:50%;
+                   font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+    `;
+    overlay.style.display = 'flex';
+}
+
 // =========== Image Attachment Handling ===========
 let pendingImageData = null;  // compressed base64 to send with next message
 
-window.handleImageSelected = function(event) {
+window.handleImageSelected = function (event) {
     const file = event.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -564,7 +596,7 @@ window.handleImageSelected = function(event) {
     event.target.value = '';
 };
 
-window.clearImageSelection = function() {
+window.clearImageSelection = function () {
     pendingImageData = null;
     document.getElementById('img-preview-strip').style.display = 'none';
     document.getElementById('img-preview-thumb').src = '';
@@ -668,8 +700,8 @@ function showTherapistPopup(type, reason) {
             </h2>
             <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem;">
                 ${isApproved
-                    ? 'Congratulations! Your therapist application has been approved by the HealSpace admin team. You can now host group chats and support users on the platform. 🧠'
-                    : 'Unfortunately, the admin team was unable to approve your application at this time.'}
+            ? 'Congratulations! Your therapist application has been approved by the HealSpace admin team. You can now host group chats and support users on the platform. 🧠'
+            : 'Unfortunately, the admin team was unable to approve your application at this time.'}
             </p>
             ${!isApproved && reason ? `
                 <div style="background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25);
