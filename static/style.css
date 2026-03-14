@@ -57,14 +57,13 @@ body {
 }
 
 .brand-icon {
-    background: var(--primary);
     width: 36px;
     height: 36px;
-    border-radius: 8px;
+    object-fit: contain;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
 }
 
 .brand h1 {
