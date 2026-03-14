@@ -767,7 +767,9 @@
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                     <button class="action-btn" style="margin-left: 8px;" onclick="saveRole('${uid}')" ${u.disabled ? 'disabled style="opacity:0.5"' : ''}>Save</button>
-                    ${!u.disabled && u.role !== 'admin' ? `<button class="action-btn" style="margin-left: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteSystemUser('${uid}', '${escapeJs(u.displayName)}')">Delete User</button>` : ''}
+                    ${!u.disabled && u.role !== 'admin' ? `<button class="action-btn" style="margin-left: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteSystemUser('${uid}', '${escapeJs(u.displayName)}')">Ban User</button>` : ''}
+                    ${u.disabled ? `<button class="action-btn" style="margin-left: 8px; background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3);" onclick="unbanSystemUser('${uid}', '${escapeJs(u.displayName)}')">Unban User</button>` : ''}
+                    ${u.role !== 'admin' ? `<button class="action-btn" title="Hard Delete" style="margin-left: 8px; background: #ef4444; color: white; border: none; padding: 5px 10px;" onclick="hardDeleteSystemUser('${uid}', '${escapeJs(u.displayName)}')"><i class="fas fa-trash"></i></button>` : ''}
                 </td>
             `;
             tbody.appendChild(tr);
@@ -820,7 +822,43 @@
             loadUsers();
             loadStats();
         } catch (e) {
-            alert("Failed to delete user: " + e.message);
+            alert("Failed to ban user: " + e.message);
+        }
+    };
+
+    // ---- Unban User ----
+    window.unbanSystemUser = async function(uid, name) {
+        if (!confirm(`Are you sure you want to unban ${name}?`)) return;
+        try {
+            await updateDoc(doc(db, "users", uid), { disabled: false });
+            loadUsers();
+            loadStats();
+        } catch (e) {
+            alert("Failed to unban user: " + e.message);
+        }
+    };
+
+    // ---- Hard Delete User ----
+    window.hardDeleteSystemUser = async function(uid, name) {
+        if (!confirm(`Are you ABSOLUTELY sure you want to permanently delete ${name}? This wipes their account completely and cannot be undone.`)) return;
+        try {
+            const idToken = await auth.currentUser.getIdToken(true);
+            const response = await fetch(`/api/admin/delete-user/${uid}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                alert(`User ${name} has been permanently deleted.`);
+                loadUsers();
+                loadStats();
+            } else {
+                alert("Failed to delete user: " + (data.error || "Unknown API error"));
+            }
+        } catch (e) {
+            alert("Network error: " + e.message);
         }
     };
 

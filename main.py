@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import List
 import firebase_admin
 from firebase_admin import auth as firebase_auth
+from firebase_admin import firestore
 
 app = FastAPI()
 
@@ -167,6 +168,27 @@ async def check_intent(body: IntentRequest, user: dict = Depends(verify_token)):
     except Exception as e:
         # If API fails, default to false so we don't block messages or show false-positive popups
         return JSONResponse({"hazardous": False, "reason": f"Intent check error: {str(e)[:100]}"}, status_code=200)
+
+# ---- Admin account deletion endpoint ----
+@app.delete("/api/admin/delete-user/{target_uid}")
+async def hard_delete_user(target_uid: str, user: dict = Depends(verify_token)):
+    caller_uid = user.get("uid")
+    if not caller_uid or caller_uid == "unverified":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    db = firestore.client()
+    caller_doc = db.collection("users").document(caller_uid).get()
+    if not caller_doc.exists or caller_doc.to_dict().get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden: Admins only")
+
+    try:
+        # Delete from Auth
+        firebase_auth.delete_user(target_uid)
+        # Delete from Firestore
+        db.collection("users").document(target_uid).delete()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 # ---- Page routes ----
 @app.get("/login", response_class=HTMLResponse)
