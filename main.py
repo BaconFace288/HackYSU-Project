@@ -11,8 +11,8 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# ---- Gemini AI Chat endpoint ----
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+# ---- OpenAI Chat endpoint ----
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 SYSTEM_PROMPT = """You are HealBot, a warm and empathetic mental-health support assistant for HealSpace — an online peer-support community.
 
@@ -36,26 +36,28 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def ai_chat(body: ChatRequest):
-    if not GEMINI_API_KEY:
+    if not OPENAI_API_KEY:
         return JSONResponse(
-            {"reply": "The AI assistant isn't configured yet. Please ask an admin to set the GEMINI_API_KEY environment variable."},
+            {"reply": "The AI assistant isn't configured yet. Please ask an admin to set the OPENAI_API_KEY environment variable."},
             status_code=200
         )
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=SYSTEM_PROMPT
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+        # Build messages array: system prompt + full history
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for msg in body.messages:
+            messages.append({"role": msg.role if msg.role == "user" else "assistant", "content": msg.text})
+
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=300,
+            temperature=0.75
         )
-        # Build history (all but last message) + last user message
-        history = []
-        for msg in body.messages[:-1]:
-            history.append({"role": msg.role, "parts": [msg.text]})
-        chat = model.start_chat(history=history)
-        last = body.messages[-1]
-        response = chat.send_message(last.text)
-        return JSONResponse({"reply": response.text})
+        reply = response.choices[0].message.content
+        return JSONResponse({"reply": reply})
     except Exception as e:
         return JSONResponse({"reply": f"I'm having trouble connecting right now. Please try again in a moment. ({str(e)[:80]})"}, status_code=200)
 
