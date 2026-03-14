@@ -4,39 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HealSpace - Settings</title>
-    <!-- Google Fonts for Modern Typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Apply theme immediately on load to prevent flash
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
     <style>
         body {
             align-items: center;
             justify-content: center;
+            overflow-y: auto;
         }
-        .settings-container {
+
+        .settings-wrapper {
             width: 90%;
-            max-width: 600px;
-            padding: 40px;
+            max-width: 560px;
+            padding: 2.5rem;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 1.5rem;
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
             backdrop-filter: blur(10px);
+            margin: 2rem auto;
         }
+
         .settings-header {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 1rem;
+            padding-bottom: 1.25rem;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
-            margin-bottom: 10px;
         }
+
         .back-btn {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border);
             color: var(--text-primary);
             width: 40px;
@@ -47,30 +55,209 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
-        .back-btn:hover {
+
+        .back-btn:hover { background: rgba(0, 0, 0, 0.1); }
+
+        html.dark-mode .back-btn {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        html.dark-mode .back-btn:hover {
             background: rgba(255, 255, 255, 0.1);
         }
+
+        .settings-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 128, 136, 0.06); /* Teal tinted */
+            border-radius: 12px;
+            border: 1px solid rgba(0, 128, 136, 0.2);
+        }
+
+        html.dark-mode .profile-card {
+            background: rgba(0, 128, 136, 0.12);
+        }
+
+        .profile-card img {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+
+        .profile-card-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .profile-card-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Section groupings */
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding-left: 4px;
+        }
+
+        /* Settings Items */
         .setting-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            background: rgba(255,255,255,0.05);
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.03);
             border-radius: 12px;
             border: 1px solid var(--border);
         }
-        .setting-info h3 {
-            font-size: 1.1rem;
-            color: var(--text-primary);
-            margin-bottom: 5px;
+        html.dark-mode .setting-item {
+            background: rgba(255, 255, 255, 0.04);
         }
+
+        .setting-info h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
         .setting-info p {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--text-secondary);
         }
-        
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.15);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Edit Forms */
+        .edit-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .edit-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .edit-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-group input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        html.dark-mode .edit-group input {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .edit-group input:focus { border-color: var(--primary); }
+
+        .save-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .save-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        /* Alert Banner */
+        .alert-banner {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .alert-success {
+            background: rgba(0, 128, 136, 0.1);
+            color: #008088;
+            border: 1px solid rgba(0, 128, 136, 0.3);
+        }
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Danger Zone */
         .logout-btn {
+            width: 100%;
             background: #ef4444;
             color: white;
             border: none;
@@ -79,58 +266,167 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 20px;
-            width: 100%;
+            transition: background 0.2s, transform 0.1s;
         }
-        .logout-btn:hover {
-            background: #dc2626;
-        }
+        .logout-btn:hover { background: #dc2626; transform: translateY(-1px); }
     </style>
 </head>
 <body>
-    <div class="settings-container">
-        <div class="settings-header">
-            <button class="back-btn" onclick="window.location.href='/'">
-                <i class="fa-solid fa-arrow-left"></i>
-            </button>
-            <h2>User Settings</h2>
-        </div>
-        
-        <div class="setting-item">
-            <div class="setting-info">
-                <h3 id="settings-username">Loading...</h3>
-                <p id="settings-email">Loading email...</p>
-            </div>
-            <div class="avatar" style="margin-right: 0;">
-                <img id="settings-avatar" src="" style="width: 50px; height: 50px; border-radius: 50%;">
-            </div>
-        </div>
 
-        <button class="logout-btn" id="logout-btn">Log Out</button>
+<div class="settings-wrapper">
+    <!-- Header -->
+    <div class="settings-header">
+        <button class="back-btn" onclick="window.location.href='/'">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>User Settings</h2>
     </div>
 
-    <!-- We need a specific script to handle firebase auth here -->
-    <script type="module">
-        import { auth } from '/static/firebase.js';
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+    <!-- Profile Card -->
+    <div class="profile-card">
+        <img id="settings-avatar" src="" alt="User Avatar">
+        <div class="profile-card-info">
+            <h3 id="settings-username">Loading...</h3>
+            <p id="settings-email">Loading email...</p>
+        </div>
+    </div>
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('settings-username').textContent = user.displayName || 'Anonymous';
-                document.getElementById('settings-email').textContent = user.email;
-                const avatar = document.getElementById('settings-avatar');
-                if (user.displayName) {
-                    avatar.src = `https://ui-avatars.com/api/?name=${user.displayName}&background=6366f1&color=fff&rounded=true`;
-                }
+    <!-- Alerts -->
+    <div id="alert-box" class="alert-banner"></div>
+
+    <!-- Appearance -->
+    <div class="settings-section">
+        <span class="section-label">Appearance</span>
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3>Dark Mode</h3>
+                <p>Switch to a deep-space dark theme</p>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Account Settings -->
+    <div class="settings-section">
+        <span class="section-label">Account</span>
+
+        <!-- Update Username -->
+        <div class="edit-group">
+            <label>Change Display Name</label>
+            <div class="edit-row">
+                <input type="text" id="new-username" placeholder="New display name...">
+                <button class="save-btn" onclick="updateUsername()">Save</button>
+            </div>
+        </div>
+
+        <!-- Update Password -->
+        <div class="edit-group">
+            <label>Change Password</label>
+            <div class="edit-row">
+                <input type="password" id="new-password" placeholder="New password (min. 6 chars)...">
+                <button class="save-btn" onclick="updateUserPassword()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="settings-section">
+        <span class="section-label">Session</span>
+        <button class="logout-btn" id="logout-btn">
+            <i class="fas fa-right-from-bracket" style="margin-right:8px;"></i>Log Out
+        </button>
+    </div>
+</div>
+
+<script type="module">
+    import { auth } from '/static/firebase.js';
+    import {
+        onAuthStateChanged,
+        signOut,
+        updateProfile,
+        updatePassword
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+    let currentUser = null;
+
+    // ------ Auth Guard & Population ------
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            populateProfile(user);
+        } else {
+            window.location.href = '/login';
+        }
+    });
+
+    function populateProfile(user) {
+        const name = user.displayName || 'Anonymous';
+        document.getElementById('settings-username').textContent = name;
+        document.getElementById('settings-email').textContent = user.email;
+        document.getElementById('settings-avatar').src =
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=008088&color=fff&rounded=true`;
+    }
+
+    // ------ Theme Toggle ------
+    const toggle = document.getElementById('theme-toggle');
+    toggle.checked = localStorage.getItem('theme') === 'dark';
+
+    toggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            document.documentElement.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // ------ Update Username ------
+    window.updateUsername = async function () {
+        const newName = document.getElementById('new-username').value.trim();
+        if (!newName) return showAlert('Please enter a new display name.', 'error');
+        try {
+            await updateProfile(currentUser, { displayName: newName });
+            populateProfile(currentUser);
+            document.getElementById('new-username').value = '';
+            showAlert('Display name updated successfully!', 'success');
+        } catch (e) {
+            showAlert('Error: ' + e.message, 'error');
+        }
+    };
+
+    // ------ Update Password ------
+    window.updateUserPassword = async function () {
+        const newPass = document.getElementById('new-password').value;
+        if (!newPass || newPass.length < 6) return showAlert('Password must be at least 6 characters.', 'error');
+        try {
+            await updatePassword(currentUser, newPass);
+            document.getElementById('new-password').value = '';
+            showAlert('Password updated successfully!', 'success');
+        } catch (e) {
+            // Firebase requires recent login for sensitive operations
+            if (e.code === 'auth/requires-recent-login') {
+                showAlert('For security, please log out and log back in before changing your password.', 'error');
             } else {
-                window.location.href = '/login';
+                showAlert('Error: ' + e.message, 'error');
             }
-        });
+        }
+    };
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
-        });
-    </script>
+    // ------ Logout ------
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+    // ------ Alert Helper ------
+    function showAlert(message, type) {
+        const box = document.getElementById('alert-box');
+        box.textContent = message;
+        box.className = `alert-banner alert-${type}`;
+        box.style.display = 'block';
+        setTimeout(() => { box.style.display = 'none'; }, 4000);
+    }
+</script>
 </body>
 </html>

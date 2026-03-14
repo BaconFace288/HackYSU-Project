@@ -1,12 +1,22 @@
-/* Base and Variables */
+/* Base and Variables - Light Mode Default */
 :root {
-    --bg-color: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --border: rgba(255, 255, 255, 0.05);
+    /* Base Colors */
+    --bg-gradient-start: #f1f5f9;
+    --bg-gradient-end: #e2e8f0;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    
+    /* Suicide Awareness Accents */
+    --primary: #008088; /* Teal */
+    --primary-hover: #006b72;
+    --secondary-accent: #773585; /* Purple */
+    
+    /* Text */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    
+    /* Structure */
+    --border: rgba(0, 0, 0, 0.1);
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -17,11 +27,12 @@
 }
 
 body {
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
     color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     overflow: hidden;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* App Header & Navbar */
@@ -30,7 +41,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 2rem;
-    background: rgba(15, 23, 42, 0.8);
+    background: var(--card-bg);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     position: sticky;
@@ -66,14 +77,14 @@ body {
     align-items: center;
     gap: 12px;
     padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 20px;
     cursor: pointer;
     transition: background 0.2s;
 }
 
 .user-profile:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .avatar img {
@@ -163,13 +174,13 @@ body {
 .post-card:hover {
     transform: translateY(-4px);
     border-color: var(--primary);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow);
 }
 
 .post-card h3 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: white;
+    color: var(--text-primary);
 }
 
 .post-card p {
@@ -205,7 +216,7 @@ body {
     flex: 1;
     display: none; /* Hidden until clicked */
     flex-direction: column;
-    background: rgba(15, 23, 42, 0.95);
+    background: var(--bg-gradient-end); /* Slightly different to differentiate from board */
 }
 
 .room-header {
@@ -214,7 +225,7 @@ body {
     gap: 1rem;
     padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.5);
+    background: var(--card-bg);
 }
 
 .btn-back {
@@ -231,7 +242,7 @@ body {
 }
 
 .btn-back:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .room-header-info h2 {
@@ -306,14 +317,14 @@ body {
 .input-area {
     padding: 1.5rem 2rem;
     border-top: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.8);
+    background: var(--card-bg);
     backdrop-filter: blur(10px);
 }
 
 .input-container {
     max-width: 1000px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(0, 0, 0, 0.03);
     border: 1px solid var(--border);
     border-radius: 24px;
     display: flex;
@@ -370,7 +381,7 @@ body {
 }
 
 .modal-content {
-    background: var(--bg-color);
+    background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 2rem;
@@ -413,9 +424,9 @@ body {
 
 .form-group input, .form-group textarea {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border);
-    color: white;
+    color: var(--text-primary);
     padding: 12px;
     border-radius: 8px;
     font-size: 1rem;
@@ -439,6 +450,38 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
+    background: rgba(0, 0, 0, 0.1);
     border-radius: 10px;
+}
+
+/* Dark Mode Overrides */
+html.dark-mode {
+    --bg-gradient-start: #0f172a;
+    --bg-gradient-end: #1e1b4b;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    
+    --border: rgba(255, 255, 255, 0.05);
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .user-profile {
+    background: rgba(255, 255, 255, 0.05);
+}
+html.dark-mode .user-profile:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+html.dark-mode .btn-back:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+html.dark-mode .input-container {
+    background: rgba(255, 255, 255, 0.03);
+}
+html.dark-mode .form-group input, html.dark-mode .form-group textarea {
+    background: rgba(255, 255, 255, 0.05);
+}
+html.dark-mode ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
 }

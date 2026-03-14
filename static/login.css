@@ -16,7 +16,7 @@ body {
     border: 1px solid var(--border);
     backdrop-filter: blur(10px);
     border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow);
 }
 
 .login-brand {
@@ -74,7 +74,7 @@ body {
 .tab-btn.active {
     background: var(--primary);
     color: white;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 128, 136, 0.4);
 }
 
 .auth-form {
@@ -97,7 +97,7 @@ body {
 }
 
 .input-group input {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border);
     color: var(--text-primary);
     padding: 12px 15px;
@@ -110,7 +110,7 @@ body {
 
 .input-group input:focus {
     border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .primary-btn {
@@ -135,10 +135,25 @@ body {
     background: transparent;
     border: 1px solid var(--primary);
     box-shadow: none;
-    color: white;
+    color: var(--primary);
 }
 .outline-btn:hover {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(0, 128, 136, 0.1);
+    color: var(--primary);
+}
+
+/* Dark mode: Invert input backgrounds */
+html.dark-mode .input-group input {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+html.dark-mode .input-group input:focus {
+    background: rgba(255, 255, 255, 0.1);
+}
+html.dark-mode .login-container {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .error-banner, .success-banner {
