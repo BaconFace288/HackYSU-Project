@@ -855,14 +855,16 @@
                         <strong>Statement:</strong> ${d.statement || '—'}
                     </div>
                     <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
-                        <a href="${d.degreeUrl}" target="_blank"
-                            style="color:#008088; font-size:0.88rem; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px;">
-                            🎓 View Degree
-                        </a>
-                        <a href="${d.idUrl}" target="_blank"
-                            style="color:#773585; font-size:0.88rem; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px;">
-                            📄 View Photo ID
-                        </a>
+                        <button onclick="window.viewDoc('${appId}','degree')"
+                            style="color:#008088; font-size:0.88rem; font-weight:600; background:rgba(0,128,136,0.08);
+                                   border:1px solid rgba(0,128,136,0.3); padding:6px 14px; border-radius:8px; cursor:pointer;">
+                            \ud83c\udf93 View Degree
+                        </button>
+                        <button onclick="window.viewDoc('${appId}','id')"
+                            style="color:#773585; font-size:0.88rem; font-weight:600; background:rgba(119,53,133,0.08);
+                                   border:1px solid rgba(119,53,133,0.3); padding:6px 14px; border-radius:8px; cursor:pointer;">
+                            \ud83d\udcc4 View Photo ID
+                        </button>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <button onclick="window.approveApplication('${appId}')"
@@ -899,6 +901,21 @@
             });
         } catch (e) {
             alert("Approval failed: " + e.message);
+        }
+    };
+
+    // Open base64 document image in a new tab
+    window.viewDoc = async function(appId, type) {
+        try {
+            const snap = await getDoc(doc(db, "therapistApplications", appId));
+            if (!snap.exists()) { alert('Application not found.'); return; }
+            const field = type === 'degree' ? 'degreeData' : 'idData';
+            const dataUrl = snap.data()[field];
+            if (!dataUrl) { alert('Document not found in this application.'); return; }
+            const win = window.open();
+            win.document.write(`<img src="${dataUrl}" style="max-width:100%; height:auto;">`);
+        } catch (e) {
+            alert('Could not open document: ' + e.message);
         }
     };
 
