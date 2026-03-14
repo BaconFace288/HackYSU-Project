@@ -312,6 +312,8 @@ window.sendMessage = async function(event) {
                 flaggedAt: Date.now(),
                 dismissed: false
             });
+            // Show the in-site support popup to the user
+            showCrisisPopup();
         }
     } catch (e) {
         console.error("Error adding message: ", e);
@@ -344,4 +346,20 @@ function appendMessage(data) {
         top: messagesContainer.scrollHeight,
         behavior: 'smooth'
     });
+}
+
+// =========== Crisis Support Popup ===========
+function showCrisisPopup() {
+    const popup = document.getElementById('crisis-popup');
+    if (!popup) return;
+    // Re-trigger animation each time
+    popup.style.display = 'none';
+    // Force reflow so animation plays again
+    void popup.offsetWidth;
+    popup.style.display = 'block';
+    // Auto-dismiss after 30 seconds
+    clearTimeout(window._crisisPopupTimer);
+    window._crisisPopupTimer = setTimeout(() => {
+        popup.style.display = 'none';
+    }, 30000);
 }
