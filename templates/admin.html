@@ -855,7 +855,8 @@
                 loadUsers();
                 loadStats();
             } else {
-                alert("Failed to delete user: " + (data.error || "Unknown API error"));
+                alert("Failed to delete user: " + (data.error || data.detail || "Unknown API error"));
+                console.error("Hard delete error:", data);
             }
         } catch (e) {
             alert("Network error: " + e.message);

@@ -176,19 +176,22 @@ async def hard_delete_user(target_uid: str, user: dict = Depends(verify_token)):
     if not caller_uid or caller_uid == "unverified":
         raise HTTPException(status_code=401, detail="Unauthorized")
         
-    db = firestore.client()
-    caller_doc = db.collection("users").document(caller_uid).get()
-    if not caller_doc.exists or caller_doc.to_dict().get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Forbidden: Admins only")
-
     try:
+        db = firestore.client()
+        caller_doc = db.collection("users").document(caller_uid).get()
+        if not caller_doc.exists or caller_doc.to_dict().get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Forbidden: Admins only")
+
         # Delete from Auth
         firebase_auth.delete_user(target_uid)
         # Delete from Firestore
         db.collection("users").document(target_uid).delete()
         return JSONResponse({"success": True})
     except Exception as e:
-        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+        error_msg = str(e)
+        if "Could not automatically determine credentials" in error_msg or "DefaultCredentialsError" in error_msg:
+            error_msg = "Google Cloud Service Account missing. The backend cannot delete users without GOOGLE_APPLICATION_CREDENTIALS set."
+        return JSONResponse({"success": False, "error": error_msg}, status_code=500)
 
 # ---- Page routes ----
 @app.get("/login", response_class=HTMLResponse)
