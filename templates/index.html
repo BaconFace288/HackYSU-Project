@@ -417,6 +417,30 @@
 
             addHealBotMsg('user', text);
             healBotHistory.push({ role: 'user', text });
+
+            // ---- Crisis keyword check (same filter as group chats) ----
+            const detectedKeyword = typeof window.checkForCrisisKeywords === 'function'
+                ? window.checkForCrisisKeywords(text)
+                : null;
+
+            if (detectedKeyword) {
+                // Show the full in-site crisis popup
+                if (typeof window.showCrisisPopup === 'function') {
+                    window.showCrisisPopup();
+                } else {
+                    // Fallback if popup isn't wired yet
+                    const popup = document.getElementById('crisis-popup');
+                    if (popup) popup.style.display = 'block';
+                }
+                // Also show a warm in-chat warning bubble
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'hb-msg bot';
+                warningDiv.style.cssText = 'border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.07); color: var(--text-primary);';
+                warningDiv.innerHTML = '🚨 <strong>Heads up</strong> — it sounds like you might be going through something serious. An admin has been notified. Please reach out to the <strong>988 Lifeline</strong> (call or text <strong>988</strong>) or text HOME to <strong>741741</strong> right now if you need immediate help. I\'m also still here to talk 💙';
+                document.getElementById('healbot-messages').appendChild(warningDiv);
+                document.getElementById('healbot-messages').scrollTop = 999999;
+            }
+
             showTyping();
 
             try {

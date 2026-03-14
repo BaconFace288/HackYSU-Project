@@ -388,6 +388,7 @@ function checkForCrisisKeywords(text) {
     const lower = text.toLowerCase();
     return CRISIS_KEYWORDS.find(kw => lower.includes(kw)) || null;
 }
+window.checkForCrisisKeywords = checkForCrisisKeywords;
 
 window.sendMessage = async function(event) {
     event.preventDefault();
