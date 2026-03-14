@@ -61,6 +61,54 @@ async def ai_chat(body: ChatRequest):
     except Exception as e:
         return JSONResponse({"reply": f"I'm having trouble connecting right now. Please try again in a moment. ({str(e)[:80]})"}, status_code=200)
 
+# ---- Image moderation endpoint ----
+class ImageModRequest(BaseModel):
+    image_data: str   # base64 data URL  e.g. "data:image/jpeg;base64,..."
+
+@app.post("/api/moderate-image")
+async def moderate_image(body: ImageModRequest):
+    if not OPENAI_API_KEY:
+        # No key set — auto-approve so the feature still works (admin should set the key)
+        return JSONResponse({"approved": True, "reason": "Moderation not configured; image auto-approved."})
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "You are a content moderation AI for a mental-health peer-support platform. "
+                            "Examine the image carefully and answer ONLY with a JSON object like: "
+                            "{\"approved\": true, \"reason\": \"\"} or {\"approved\": false, \"reason\": \"Brief reason\"}.\n"
+                            "Reject (approved=false) if the image contains: nudity, sexual content, graphic violence or gore, "
+                            "self-harm imagery, hate symbols, drugs, or anything inappropriate for a support community. "
+                            "Approve (approved=true) if it is a benign image (memes, nature, text screenshots, artwork, etc.). "
+                            "Return ONLY valid JSON, no markdown."
+                        )
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": body.image_data, "detail": "low"}
+                    }
+                ]
+            }],
+            max_tokens=80
+        )
+        import json as _json
+        raw = response.choices[0].message.content.strip()
+        # Strip any markdown code fences the model might add
+        raw = raw.replace("```json", "").replace("```", "").strip()
+        result = _json.loads(raw)
+        return JSONResponse(result)
+    except Exception as e:
+        # On error, reject to be safe
+        return JSONResponse({"approved": False, "reason": f"Moderation error: {str(e)[:100]}"}, status_code=200)
+
 # ---- Page routes ----
 @app.get("/login", response_class=HTMLResponse)
 async def get_login(request: StarletteRequest):

@@ -396,16 +396,44 @@ window.sendMessage = async function(event) {
     if(!currentRoomId) return;
 
     const text = messageInput.value.trim();
-    if (text === '') return;
+    if (text === '' && !pendingImageData) return;   // need text OR image
 
-    // ---- Profanity filter ----
-    if (containsProfanity(text)) {
+    // ---- Profanity filter (text) ----
+    if (text && containsProfanity(text)) {
         showProfanityAlert();
         return;
     }
 
+    // ---- AI image moderation ----
+    let approvedImageData = null;
+    if (pendingImageData) {
+        const statusEl = document.getElementById('img-moderation-status');
+        statusEl.textContent = '🔍 Checking image with AI...';
+        statusEl.style.color = '#ca8a04';
+        try {
+            const modRes = await fetch('/api/moderate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image_data: pendingImageData })
+            });
+            const modData = await modRes.json();
+            if (modData.approved) {
+                approvedImageData = pendingImageData;
+                window.clearImageSelection();
+            } else {
+                statusEl.textContent = `❌ Image rejected: ${modData.reason || 'Inappropriate content'}`;
+                statusEl.style.color = '#ef4444';
+                return;  // Don't send
+            }
+        } catch (err) {
+            statusEl.textContent = '❌ Moderation check failed. Please try again.';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+    }
+
     messageInput.value = '';
-    
+
     // Add small visual feedback on send button
     const btn = document.getElementById('send-btn');
     if (btn) {
@@ -416,12 +444,10 @@ window.sendMessage = async function(event) {
     try {
         // Write to posts/{post_id}/messages
         const messagesRef = collection(db, "posts", currentRoomId, "messages");
-        await addDoc(messagesRef, {
-            text: text,
-            uid: currentUser.uid,
-            displayName: currentUser.displayName,
-            createdAt: Date.now()
-        });
+        const msgDoc = { uid: currentUser.uid, displayName: currentUser.displayName, createdAt: Date.now() };
+        if (text) msgDoc.text = text;
+        if (approvedImageData) msgDoc.imageData = approvedImageData;
+        await addDoc(messagesRef, msgDoc);
 
         // Track this room in the user's participatedRooms for the Conversations tab
         updateDoc(doc(db, "users", currentUser.uid), {
@@ -470,7 +496,20 @@ function appendMessage(data) {
 
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('message-content');
-    contentDiv.textContent = data.text;
+
+    // Render image if present
+    if (data.imageData) {
+        const img = document.createElement('img');
+        img.src = data.imageData;
+        img.alt = 'shared image';
+        img.style.cssText = 'max-width:220px; max-height:220px; border-radius:10px; display:block; margin-bottom: data.text ? 6px : 0; cursor:zoom-in;';
+        img.onclick = () => { window.open(data.imageData, '_blank'); };
+        contentDiv.appendChild(img);
+    }
+    if (data.text) {
+        const textNode = document.createTextNode(data.text);
+        contentDiv.appendChild(textNode);
+    }
 
     msgDiv.appendChild(contentDiv);
     messagesContainer.appendChild(msgDiv);
@@ -480,6 +519,56 @@ function appendMessage(data) {
         behavior: 'smooth'
     });
 }
+
+// =========== Image Attachment Handling ===========
+let pendingImageData = null;  // compressed base64 to send with next message
+
+window.handleImageSelected = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        alert('Image must be under 10 MB.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const MAX = 900;
+            let { width, height } = img;
+            if (width > MAX || height > MAX) {
+                if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+                else { width = Math.round(width * MAX / height); height = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            pendingImageData = canvas.toDataURL('image/jpeg', 0.82);
+
+            // Show preview strip
+            document.getElementById('img-preview-thumb').src = pendingImageData;
+            const strip = document.getElementById('img-preview-strip');
+            strip.style.display = 'flex';
+            document.getElementById('img-moderation-status').textContent = '✅ Image ready — send your message';
+            document.getElementById('img-moderation-status').style.color = '#16a34a';
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    // Reset the input so the same file can be re-selected
+    event.target.value = '';
+};
+
+window.clearImageSelection = function() {
+    pendingImageData = null;
+    document.getElementById('img-preview-strip').style.display = 'none';
+    document.getElementById('img-preview-thumb').src = '';
+};
 
 // =========== Profanity Alert ===========
 function showProfanityAlert() {

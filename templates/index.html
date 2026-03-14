@@ -72,9 +72,28 @@
             </div>
 
             <div class="input-area">
+                <!-- Image preview strip (appears when an image is selected) -->
+                <div id="img-preview-strip" style="display:none; padding: 6px 16px 2px; align-items:center; gap:10px;">
+                    <img id="img-preview-thumb" src="" alt="preview"
+                        style="height:56px; border-radius:8px; border:1px solid var(--border); object-fit:cover; max-width:100px;">
+                    <div id="img-moderation-status" style="font-size:0.82rem; color:var(--text-secondary);">Ready to send</div>
+                    <button onclick="window.clearImageSelection()"
+                        style="margin-left:auto; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3);
+                               padding:4px 10px; border-radius:7px; font-size:0.8rem; cursor:pointer;">✕ Remove</button>
+                </div>
                 <form id="chat-form" onsubmit="window.sendMessage(event)">
                     <div class="input-container">
-                        <i class="fas fa-paperclip" style="color:var(--text-secondary); margin-right:12px; font-size: 1.2rem;"></i>
+                        <!-- Hidden file input -->
+                        <input type="file" id="img-file-input" accept="image/*" style="display:none;"
+                            onchange="window.handleImageSelected(event)">
+                        <!-- Clickable paperclip -->
+                        <button type="button" id="attach-btn" title="Attach image"
+                            onclick="document.getElementById('img-file-input').click()"
+                            style="background:none; border:none; cursor:pointer; color:var(--text-secondary);
+                                   margin-right:12px; font-size:1.2rem; display:flex; align-items:center;
+                                   transition: color 0.2s; padding:0;">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
                         <input type="text" id="message-input" autocomplete="off" placeholder="Type a supportive message...">
                         <i class="far fa-smile" style="color:var(--text-secondary); margin:0 12px; font-size: 1.2rem;"></i>
                         <button type="submit" id="send-btn">
