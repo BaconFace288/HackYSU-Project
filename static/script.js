@@ -1,22 +1,40 @@
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const wsHost = window.location.host || "localhost:8000"; // fallback if opened raw
-const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws`);
+const wsHost = window.location.host || "localhost:8000";
+
+// Auth Check
+const token = localStorage.getItem('healspace_token');
+const username = localStorage.getItem('healspace_username');
+
+if (!token) {
+    window.location.href = '/login';
+}
+
+const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws?token=${token}`);
 
 const messagesContainer = document.getElementById('messages-container');
 const messageInput = document.getElementById('message-input');
 
-// Current user identifier
-const myUserId = window.userId || Math.floor(Math.random() * 10000).toString();
-
-// Update user avatar in UI to match random ID
+// Update user avatar in UI to match their real username
 document.addEventListener("DOMContentLoaded", () => {
     const avatarImg = document.querySelector(".avatar img");
-    if(avatarImg) {
-        avatarImg.src = `https://ui-avatars.com/api/?name=User+${myUserId}&background=6366f1&color=fff&rounded=true`;
+    if(avatarImg && username) {
+        avatarImg.src = `https://ui-avatars.com/api/?name=${username}&background=6366f1&color=fff&rounded=true`;
     }
     const userNameSpan = document.querySelector(".user-info h3");
-    if(userNameSpan) {
-        userNameSpan.textContent = `User ${myUserId}`;
+    if(userNameSpan && username) {
+        userNameSpan.textContent = username;
+    }
+    
+    // Add logout button functionality if we want
+    const userProfile = document.querySelector(".user-profile");
+    if(userProfile) {
+        userProfile.style.cursor = 'pointer';
+        userProfile.title = "Click to log out";
+        userProfile.onclick = () => {
+            localStorage.removeItem('healspace_token');
+            localStorage.removeItem('healspace_username');
+            window.location.href = '/login';
+        };
     }
 });
 
@@ -40,9 +58,8 @@ function sendMessage(event) {
     const text = messageInput.value.trim();
     if (text === '') return;
     
-    // Create a JSON payload
+    // Create a JSON payload (we don't need to send id anymore, backend knows who we are)
     const payload = {
-        id: myUserId,
         text: text
     };
 
@@ -58,7 +75,7 @@ function sendMessage(event) {
 }
 
 function appendMessage(data) {
-    const isSelf = data.id === myUserId;
+    const isSelf = data.id === username;
     
     // Create message element wrapper
     const msgDiv = document.createElement('div');
@@ -69,7 +86,7 @@ function appendMessage(data) {
     if (!isSelf) {
         const senderDiv = document.createElement('div');
         senderDiv.classList.add('message-sender');
-        senderDiv.textContent = `User ${data.id}`;
+        senderDiv.textContent = data.id;
         msgDiv.appendChild(senderDiv);
     }
 

@@ -1,0 +1,141 @@
+/* login.css - Extends style.css for the auth page */
+.login-container {
+    width: 90%;
+    max-width: 400px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(15, 23, 42, 0.6); /* Slightly more opaque for readability */
+}
+
+.login-brand {
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.login-brand h2 {
+    font-size: 2rem;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.auth-box {
+    width: 100%;
+}
+
+.auth-tabs {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 5px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeIn 0.4s ease;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding-left: 5px;
+}
+
+.input-group input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    padding: 12px 15px;
+    border-radius: 12px;
+    font-size: 1rem;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.primary-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    margin-top: 10px;
+}
+
+.primary-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.outline-btn {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    box-shadow: none;
+}
+.outline-btn:hover {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.error-banner, .success-banner {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.error-banner {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.success-banner {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
