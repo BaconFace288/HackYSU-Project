@@ -757,7 +757,30 @@
             seen.add(r.id); return true;
         });
 
-        uniqueRooms.forEach(room => {
+        // Verify each post still exists before displaying (in case admin deleted it)
+        const validRooms = [];
+        for (const room of uniqueRooms) {
+            try {
+                const postSnap = await getDoc(doc(db, "posts", room.id));
+                if (postSnap.exists()) {
+                    validRooms.push(room);
+                }
+            } catch (e) {
+                console.error("Error verifying room:", e);
+            }
+        }
+
+        if (validRooms.length === 0) {
+            groupList.innerHTML = '';
+            groupLabel.style.display = 'none';
+            checkIfEmpty();
+            return;
+        }
+
+        groupLabel.style.display = 'block';
+        groupList.innerHTML = '';
+
+        validRooms.forEach(room => {
             const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(room.title || 'Room')}&background=008088&color=fff&rounded=true`;
             const isActive = `group-${room.id}` === activeConvId;
 
