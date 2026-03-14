@@ -586,6 +586,25 @@
                         </button>
                     </div>`;
                 formWrapper.style.display = 'none';
+
+            } else if (d.status === 'demoted' || d.status === 'reset') {
+                // Admin demoted them — show a notice but also show the form so they can re-apply
+                banner.style.display = 'block';
+                banner.innerHTML = `
+                    <div style="background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.35);
+                        border-radius:12px; padding:14px 16px; display:flex; align-items:flex-start; gap:12px; margin-bottom: 1rem;">
+                        <span style="font-size:1.4rem;">ℹ️</span>
+                        <div>
+                            <strong style="color:#ca8a04;">Your Therapist Status Was Removed</strong>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px;">
+                                An admin has changed your role back to User. You are welcome to submit a new application below if you believe this was a mistake or your circumstances have changed.
+                            </p>
+                        </div>
+                    </div>`;
+                // Show the form so they can re-apply immediately
+                formWrapper.style.display = 'block';
+                document.getElementById('app-step-1').style.display = 'block';
+                document.getElementById('app-step-2').style.display = 'none';
             }
         });
     }

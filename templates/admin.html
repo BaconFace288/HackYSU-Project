@@ -763,8 +763,25 @@
     window.saveRole = async function(uid) {
         const select = document.getElementById(`role-select-${uid}`);
         const newRole = select.value;
+        // Find out the current role before updating
+        const userSnap = await getDoc(doc(db, "users", uid));
+        const oldRole = userSnap.exists() ? userSnap.data().role : 'user';
         try {
             await updateDoc(doc(db, "users", uid), { role: newRole });
+
+            // If demoting from Certified Therapist → user, reset their application
+            // so they can re-apply through Settings
+            if (oldRole === 'Certified Therapist' && newRole === 'user') {
+                try {
+                    await updateDoc(doc(db, "therapistApplications", uid), {
+                        status: 'demoted',
+                        demotedAt: Date.now()
+                    });
+                } catch (_) {
+                    // No application doc exists — that's fine, nothing to reset
+                }
+            }
+
             loadUsers(); // Refresh
             loadStats();
         } catch (e) {
