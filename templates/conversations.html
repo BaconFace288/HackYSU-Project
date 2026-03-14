@@ -369,6 +369,71 @@
         }
 
         .thread-send-btn:hover { background: var(--primary-hover); }
+
+        /* ---- Therapist Request Styles ---- */
+        .request-cta {
+            margin: 0.75rem 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(0,128,136,0.08), rgba(119,53,133,0.08));
+            border: 1px solid rgba(0,128,136,0.25);
+            text-align: center;
+        }
+        .request-cta p {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .request-cta-btn {
+            width: 100%;
+            padding: 9px 0;
+            border-radius: 9px;
+            border: none;
+            background: linear-gradient(135deg, #008088, #773585);
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .request-cta-btn:hover { opacity: 0.88; }
+        .request-form-area {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .request-form-area textarea {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.04);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.88rem;
+            padding: 8px 12px;
+            resize: vertical;
+            outline: none;
+            min-height: 70px;
+            box-sizing: border-box;
+        }
+        html.dark-mode .request-form-area textarea { background: rgba(255,255,255,0.05); }
+        .request-row { display: flex; gap: 8px; }
+        .request-pending-badge {
+            display: inline-block;
+            font-size: 0.7rem; font-weight: 700;
+            padding: 2px 8px; border-radius: 10px;
+            background: rgba(234,179,8,0.12); color: #ca8a04;
+            border: 1px solid rgba(234,179,8,0.3);
+        }
+        .request-accept-btn {
+            background: linear-gradient(135deg, #008088, #773585);
+            color: white; border: none; padding: 5px 13px;
+            border-radius: 7px; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; white-space: nowrap;
+        }
+        .request-accept-btn:hover { opacity: 0.85; }
     </style>
 </head>
 <body>
@@ -381,6 +446,32 @@
             <h2>Conversations</h2>
         </div>
         <div class="inbox-list" id="inbox-list">
+
+            <!-- Request a Therapist CTA (shown only to regular users) -->
+            <div id="request-cta-section" style="display:none;">
+                <div class="request-cta">
+                    <p>Need to talk? Request a private session with a <strong>Certified Therapist</strong>.</p>
+                    <button class="request-cta-btn" onclick="window.toggleRequestForm()">
+                        🧠 Request a Therapist Session
+                    </button>
+                    <div class="request-form-area" id="request-form-area">
+                        <textarea id="request-message" placeholder="Briefly describe what you'd like to talk about (optional)..."></textarea>
+                        <div class="request-row">
+                            <button class="request-cta-btn"
+                                style="background:rgba(0,0,0,0.08); color:var(--text-secondary); flex:0 0 auto; padding:8px 14px; font-size:0.85rem;"
+                                onclick="window.toggleRequestForm()">Cancel</button>
+                            <button class="request-cta-btn" id="request-submit-btn" style="flex:1;"
+                                onclick="window.submitRequest()">Send Request 🚀</button>
+                        </div>
+                        <div id="request-status" style="font-size:0.82rem; color:var(--text-secondary); text-align:center;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Therapist/Admin: Pending Session Requests -->
+            <div class="inbox-section-label" id="requests-label" style="display:none;">📋 Session Requests</div>
+            <div id="requests-list"></div>
+
             <!-- Private conversations section -->
             <div class="inbox-section-label" id="private-label" style="display:none;">💬 Private</div>
             <div id="private-list"></div>
@@ -446,6 +537,7 @@
         currentUserRole = snap.exists() ? snap.data().role : 'user';
 
         loadInbox();
+        setupRoleUI();
 
         // If opened with ?conv=ID (from admin panel intervention link)
         const params = new URLSearchParams(window.location.search);
@@ -453,6 +545,133 @@
             openConversation(params.get('conv'));
         }
     });
+
+    // Show/hide UI based on role
+    function setupRoleUI() {
+        const isTherapistOrAdmin = currentUserRole === 'Certified Therapist' || currentUserRole === 'admin';
+        // Regular users see the Request CTA
+        const ctaSection = document.getElementById('request-cta-section');
+        if (ctaSection) ctaSection.style.display = isTherapistOrAdmin ? 'none' : 'block';
+        // Therapists/admins see the pending requests inbox section
+        if (isTherapistOrAdmin) loadTherapistRequests();
+    }
+
+    // Toggle request form visibility
+    window.toggleRequestForm = function() {
+        const area = document.getElementById('request-form-area');
+        area.style.display = area.style.display === 'flex' ? 'none' : 'flex';
+        document.getElementById('request-status').textContent = '';
+    };
+
+    // User submits a therapist session request
+    window.submitRequest = async function() {
+        const msg = document.getElementById('request-message').value.trim();
+        const btn = document.getElementById('request-submit-btn');
+        const status = document.getElementById('request-status');
+        btn.disabled = true; btn.textContent = 'Sending...';
+        try {
+            await addDoc(collection(db, 'therapistRequests'), {
+                uid: currentUser.uid,
+                displayName: currentUser.displayName || 'Anonymous',
+                email: currentUser.email || '',
+                message: msg || 'No message provided.',
+                status: 'pending',
+                requestedAt: Date.now()
+            });
+            status.textContent = '✅ Request sent! A therapist will reach out soon.';
+            status.style.color = '#16a34a';
+            document.getElementById('request-message').value = '';
+            setTimeout(() => window.toggleRequestForm(), 2500);
+        } catch (e) {
+            status.textContent = 'Error: ' + e.message;
+            status.style.color = '#ef4444';
+        } finally {
+            btn.disabled = false; btn.textContent = 'Send Request 🚀';
+        }
+    };
+
+    // Therapist/admin: load pending session requests in real-time
+    function loadTherapistRequests() {
+        const q = query(
+            collection(db, 'therapistRequests'),
+            where('status', '==', 'pending')
+        );
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById('requests-list');
+            const label = document.getElementById('requests-label');
+            if (!list) return;
+            if (snap.empty) {
+                list.innerHTML = '';
+                label.style.display = 'none';
+                checkIfEmpty();
+                return;
+            }
+            label.style.display = 'block';
+            list.innerHTML = '';
+            const sorted = snap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.requestedAt || 0) - (a.requestedAt || 0));
+            sorted.forEach(req => {
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(req.displayName || 'U')}&background=475569&color=fff&rounded=true`;
+                const item = document.createElement('div');
+                item.className = 'inbox-item';
+                item.style.cursor = 'default';
+                item.innerHTML = `
+                    <img class="inbox-avatar" src="${avatarUrl}" alt="${req.displayName}">
+                    <div class="inbox-item-info" style="flex:1;">
+                        <div class="inbox-item-name">${req.displayName || 'Unknown'}
+                            <span class="request-pending-badge">⏳ Pending</span>
+                        </div>
+                        <div class="inbox-item-preview" style="font-size:0.8rem; line-height:1.4; margin-top:3px;">${req.message}</div>
+                        <button class="request-accept-btn" style="margin-top:8px;"
+                            onclick="window.acceptRequest('${req.id}', '${req.uid}', '${req.displayName.replace(/'/g, "'")}')">Accept &amp; Start Chat</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+            checkIfEmpty();
+        });
+    }
+
+    // Therapist accepts and opens a conversation
+    window.acceptRequest = async function(requestId, userUid, userName) {
+        try {
+            const therapistName = currentUser.displayName || 'Therapist';
+            // Create a private conversation
+            const convRef = await addDoc(collection(db, 'conversations'), {
+                participantUids: [userUid, currentUser.uid],
+                therapistUid: currentUser.uid,
+                therapistName: therapistName,
+                adminUid: currentUser.uid,   // reuse existing admin field for thread rendering
+                adminName: therapistName,
+                userUid: userUid,
+                userName: userName,
+                fromTherapist: true,
+                lastMessage: 'Session started',
+                createdAt: Date.now()
+            });
+            // Send opening message from therapist
+            await addDoc(collection(db, 'conversations', convRef.id, 'messages'), {
+                text: `Hi ${userName}, I'm ${therapistName} 🧠. I've received your request and I'm here to help. Feel free to share what's on your mind whenever you're ready.`,
+                senderUid: currentUser.uid,
+                senderName: therapistName,
+                senderRole: 'Certified Therapist',
+                createdAt: Date.now()
+            });
+            // Mark request accepted
+            await updateDoc(doc(db, 'therapistRequests', requestId), {
+                status: 'accepted',
+                acceptedByUid: currentUser.uid,
+                acceptedByName: therapistName,
+                acceptedAt: Date.now(),
+                convId: convRef.id
+            });
+            // Open the conversation
+            openConversation(convRef.id);
+        } catch (e) {
+            alert('Failed to start session: ' + e.message);
+        }
+    };
 
     // ------ Load Inbox ------
     function loadInbox() {
