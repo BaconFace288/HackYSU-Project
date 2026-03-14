@@ -34,6 +34,9 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
 
+class IntentRequest(BaseModel):
+    text: str
+
 @app.post("/api/chat")
 async def ai_chat(body: ChatRequest):
     if not OPENAI_API_KEY:
@@ -108,6 +111,41 @@ async def moderate_image(body: ImageModRequest):
     except Exception as e:
         # On error, reject to be safe
         return JSONResponse({"approved": False, "reason": f"Moderation error: {str(e)[:100]}"}, status_code=200)
+
+# ---- Intent checking endpoint ----
+@app.post("/api/check-intent")
+async def check_intent(body: IntentRequest):
+    if not OPENAI_API_KEY:
+        # No key set - bypass intent checking
+        return JSONResponse({"hazardous": False, "reason": "No API key configured."})
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": (
+                    "You are a crisis intent detection AI for a mental-health peer-support platform. "
+                    "Analyze the given text and determine if the user has clear hazardous intent (e.g., self-harm, suicide, harming others). "
+                    "Answer ONLY with a JSON object like: {\"hazardous\": true, \"reason\": \"Brief reason for flagging\"} "
+                    "or {\"hazardous\": false, \"reason\": \"\"}.\n"
+                    "Return ONLY valid JSON, no markdown.\n\n"
+                    f"Text to analyze: \"{body.text}\""
+                )
+            }],
+            max_tokens=80,
+            temperature=0.0
+        )
+        import json as _json
+        raw = response.choices[0].message.content.strip()
+        raw = raw.replace("```json", "").replace("```", "").strip()
+        result = _json.loads(raw)
+        return JSONResponse(result)
+    except Exception as e:
+        # If API fails, default to false so we don't block messages or show false-positive popups
+        return JSONResponse({"hazardous": False, "reason": f"Intent check error: {str(e)[:100]}"}, status_code=200)
 
 # ---- Page routes ----
 @app.get("/login", response_class=HTMLResponse)
