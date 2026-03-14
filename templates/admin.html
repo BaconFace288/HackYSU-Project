@@ -572,10 +572,10 @@
 
     // ---- Real-time Crisis Alerts ----
     function listenForCrisisAlerts() {
+        // Simple query - only filter by dismissed to avoid needing a composite index
         const q = query(
             collection(db, "flaggedMessages"),
-            where("dismissed", "==", false),
-            orderBy("flaggedAt", "desc")
+            where("dismissed", "==", false)
         );
 
         onSnapshot(q, (snapshot) => {
@@ -590,11 +590,14 @@
                 return;
             }
 
-            countBadge.textContent = snapshot.size;
-            statFlags.textContent = snapshot.size;
+            // Sort newest first client-side (no composite index needed)
+            const docs = snapshot.docs.sort((a, b) => b.data().flaggedAt - a.data().flaggedAt);
+
+            countBadge.textContent = docs.length;
+            statFlags.textContent = docs.length;
             list.innerHTML = '';
 
-            snapshot.forEach(docSnap => {
+            docs.forEach(docSnap => {
                 const d = docSnap.data();
                 const flagId = docSnap.id;
                 const timeAgo = timeSince(d.flaggedAt);
