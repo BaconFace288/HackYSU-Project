@@ -486,8 +486,8 @@
                 <tr>
                     <th>User</th>
                     <th>Email</th>
-                    <th>Current Role</th>
-                    <th>Change Role</th>
+                    <th>Role Status</th>
+                    <th>Role Settings</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -768,14 +768,11 @@
                         <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                     <button class="action-btn" style="margin-left: 8px;" onclick="saveRole('${uid}')" ${u.disabled ? 'disabled style="opacity:0.5"' : ''}>Save</button>
-                    ${!u.disabled && u.role !== 'admin' ? `<button class="action-btn" style="margin-left: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="deleteSystemUser('${uid}', '${escapeJs(u.displayName)}')">Ban User</button>` : ''}
-                    ${u.disabled ? `<button class="action-btn" style="margin-left: 8px; background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3);" onclick="unbanSystemUser('${uid}', '${escapeJs(u.displayName)}')">Unban User</button>` : ''}
-                    ${u.role !== 'admin' ? `<button class="action-btn" title="Hard Delete" style="margin-left: 8px; background: #ef4444; color: white; border: none; padding: 5px 10px;" onclick="hardDeleteSystemUser('${uid}', '${escapeJs(u.displayName)}')"><i class="fas fa-trash"></i></button>` : ''}
                 </td>
                 <td>
-                    <button class="delete-btn" onclick="deleteUser('${uid}')">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
+                    ${!u.disabled && u.role !== 'admin' ? `<button class="action-btn" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="banUser('${uid}', '${escapeJs(u.displayName)}')">Ban</button>` : ''}
+                    ${u.disabled ? `<button class="action-btn" style="background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3);" onclick="unbanUser('${uid}', '${escapeJs(u.displayName)}')">Unban</button>` : ''}
+                    ${u.role !== 'admin' ? `<button class="delete-btn" style="margin-left:8px;" onclick="deleteUser('${uid}', '${escapeJs(u.displayName)}')"><i class="fas fa-trash"></i> Delete</button>` : ''}
                 </td>
             `;
             tbody.appendChild(tr);
@@ -812,19 +809,17 @@
         }
     };
 
-    // ---- Soft-Delete User ----
-    window.deleteSystemUser = async function(uid, name) {
-        if (!confirm(`Are you sure you want to delete and ban the user account for ${name}? They will no longer be able to log in.`)) return;
+    // ---- Ban User ----
+    window.banUser = async function(uid, name) {
+        if (!confirm(`Are you sure you want to ban ${name}? They will no longer be able to log in.`)) return;
         try {
             await updateDoc(doc(db, "users", uid), { disabled: true, role: 'user' });
-            // Drop them from therapists if they are one
             try {
                 await updateDoc(doc(db, "therapistApplications", uid), {
                     status: 'banned',
                     demotedAt: Date.now()
                 });
             } catch (_) {}
-
             loadUsers();
             loadStats();
         } catch (e) {
@@ -833,7 +828,7 @@
     };
 
     // ---- Unban User ----
-    window.unbanSystemUser = async function(uid, name) {
+    window.unbanUser = async function(uid, name) {
         if (!confirm(`Are you sure you want to unban ${name}?`)) return;
         try {
             await updateDoc(doc(db, "users", uid), { disabled: false });
@@ -844,50 +839,46 @@
         }
     };
 
-    // ---- Hard Delete User ----
-    window.hardDeleteSystemUser = async function(uid, name) {
-        if (!confirm(`Are you ABSOLUTELY sure you want to permanently delete ${name}? This wipes their account completely and cannot be undone.`)) return;
-        try {
-            const idToken = await auth.currentUser.getIdToken(true);
-            const response = await fetch(`/api/admin/delete-user/${uid}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${idToken}`
-                }
-            });
-            const data = await response.json();
-            if (response.ok && data.success) {
-                alert(`User ${name} has been permanently deleted.`);
-                loadUsers();
-                loadStats();
-            } else {
-                alert("Failed to delete user: " + (data.error || data.detail || "Unknown API error"));
-                console.error("Hard delete error:", data);
-            }
-        } catch (e) {
-            alert("Network error: " + e.message);
-        }
-    };
-
-    // ---- Delete User (Firestore Only) ----
-    window.deleteUser = async function(uid) {
+    // ---- Unified Delete User (Auth + Firestore) ----
+    window.deleteUser = async function(uid, name) {
         if (uid === currentAdminUser.uid) {
             alert("You cannot delete your own admin account!");
             return;
         }
-        if (!confirm("Are you sure you want to delete this user? This will remove their profile data from Firestore. (Note: Their auth account will remain, but they will be treated as a new user if they log in again).")) return;
+        
+        const confirmMsg = `Are you ABSOLUTELY sure you want to permanently delete ${name || 'this user'}?\n\nThis will attempt to remove their authentication account and wipe their profile data from Firestore. This cannot be undone.`;
+        if (!confirm(confirmMsg)) return;
         
         try {
-            await deleteDoc(doc(db, "users", uid));
-            // Also clean up any pending therapist application if it exists
-            try {
-                await deleteDoc(doc(db, "therapistApplications", uid));
-            } catch (e) { /* ignore if doesn't exist */ }
+            // 1. Attempt Hard Delete via Backend API (Auth + Firestore)
+            const idToken = await auth.currentUser.getIdToken(true);
+            const response = await fetch(`/api/admin/delete-user/${uid}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${idToken}` }
+            });
             
-            loadUsers(); // Refresh
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                alert(`User ${name} has been fully deleted from the system.`);
+            } else {
+                // 2. Fallback: If Backend fails (e.g. missing service account), offer Firestore-only delete
+                console.warn("Backend hard delete failed:", data.error);
+                const fallback = confirm("The server-side account deletion failed (likely due to missing credentials). Would you like to proceed with a Firestore-only deletion? This removes their profile but leaves their login active.");
+                
+                if (fallback) {
+                    await deleteDoc(doc(db, "users", uid));
+                    try {
+                        await deleteDoc(doc(db, "therapistApplications", uid));
+                    } catch (_) {}
+                    alert("User profile removed from Firestore. Auth account remains active.");
+                }
+            }
+            
+            loadUsers();
             loadStats();
         } catch (e) {
-            alert("Failed to delete user: " + e.message);
+            alert("Network error or deletion failure: " + e.message);
         }
     };
 
