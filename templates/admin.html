@@ -22,8 +22,8 @@
         }
 
         .admin-wrapper {
-            width: 95%;
-            max-width: 900px;
+            width: 98%;
+            max-width: 1200px;
             margin: 2rem auto;
             display: flex;
             flex-direction: column;
@@ -156,12 +156,13 @@
         }
 
         .user-table td {
-            padding: 0.9rem 1.5rem;
-            font-size: 0.95rem;
+            padding: 0.8rem 1rem;
+            font-size: 0.9rem;
             border-bottom: 1px solid var(--border);
         }
 
         .user-table tr:last-child td { border-bottom: none; }
+        .user-table td:nth-child(4), .user-table td:nth-child(5) { white-space: nowrap; }
 
         .user-table tr:hover td {
             background: rgba(0,0,0,0.02);
@@ -198,11 +199,12 @@
             background: transparent;
             border: 1px solid var(--border);
             color: var(--text-primary);
-            padding: 4px 8px;
+            padding: 4px 6px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             outline: none;
+            max-width: 140px;
         }
         .role-selector:focus { border-color: var(--primary); }
 
@@ -210,9 +212,9 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -244,9 +246,9 @@
             background: rgba(239, 68, 68, 0.1);
             color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.3);
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             cursor: pointer;
             transition: background 0.2s;
         }
