@@ -59,6 +59,9 @@ class ChatRequest(BaseModel):
 class IntentRequest(BaseModel):
     text: str
 
+class JournalInsightRequest(BaseModel):
+    entries: List[str]
+
 @app.post("/api/chat")
 async def ai_chat(body: ChatRequest, user: dict = Depends(verify_token)):
     if not OPENAI_API_KEY:
@@ -168,6 +171,43 @@ async def check_intent(body: IntentRequest, user: dict = Depends(verify_token)):
     except Exception as e:
         # If API fails, default to false so we don't block messages or show false-positive popups
         return JSONResponse({"hazardous": False, "reason": f"Intent check error: {str(e)[:100]}"}, status_code=200)
+
+# ---- Journal Insight endpoint ----
+@app.post("/api/journal-insight")
+async def journal_insight(body: JournalInsightRequest, user: dict = Depends(verify_token)):
+    if not OPENAI_API_KEY:
+        return JSONResponse({"insight": "AI Insights are offline. Ask an admin to provide an OPENAI_API_KEY."})
+    
+    if not body.entries:
+        return JSONResponse({"insight": "You haven't written any journal entries yet this week! Write a few thoughts down first so I can analyze them for you."})
+
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+        entries_text = "\n\n---\n\n".join(body.entries)
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "system",
+                "content": (
+                    "You are HealBot, an empathetic journaling assistant. "
+                    "Read the user's private journal entries from this past week and provide a warm, 3-4 sentence summary of their emotional trends. "
+                    "Highlight any recurring themes (stress, growth, anxiety), validate their feelings, and offer one gentle, customized psychological coping mechanism or grounding technique based on what they wrote.\n"
+                    "Speak directly to the user (e.g., 'It sounds like you've been carrying a heavy load this week...')."
+                )
+            }, {
+                "role": "user",
+                "content": f"Here are my journal entries from this week:\n\n{entries_text}"
+            }],
+            max_tokens=250,
+            temperature=0.6
+        )
+        insight = response.choices[0].message.content.strip()
+        return JSONResponse({"insight": insight})
+    except Exception as e:
+        return JSONResponse({"insight": f"Sorry, I couldn't generate an insight right now: {str(e)[:100]}"}, status_code=200)
 
 # ---- Admin account deletion endpoint ----
 @app.delete("/api/admin/delete-user/{target_uid}")

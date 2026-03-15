@@ -46,13 +46,38 @@
                 </button>
             </div>
             
-            <!-- Posts will be injected here -->
-            <div class="feed-container" id="feed-container">
-                <!-- Example Skeleton Card (removed when real data loads) -->
-                <div class="post-card">
-                    <h3>Loading Feed...</h3>
-                    <p>Connecting to Firebase FireStore to load community requests...</p>
+            <div class="board-layout">
+                <!-- Posts will be injected here -->
+                <div class="feed-container" id="feed-container">
+                    <!-- Example Skeleton Card (removed when real data loads) -->
+                    <div class="post-card">
+                        <h3>Loading Feed...</h3>
+                        <p>Connecting to Firebase FireStore to load community requests...</p>
+                    </div>
                 </div>
+
+                <!-- AI Private Journal Sidebar -->
+                <aside class="journal-sidebar">
+                    <div class="journal-header">
+                        <h3><i class="fas fa-book-open" style="color:var(--primary); margin-right:8px;"></i>My Private Journal</h3>
+                        <p>Write down your thoughts. Only you can see these.</p>
+                    </div>
+                    
+                    <div class="journal-input-area">
+                        <textarea id="journal-input" placeholder="What's on your mind today?" rows="3"></textarea>
+                        <button class="btn-primary" style="width:100%; justify-content:center; padding:8px; margin-top:10px;" onclick="window.saveJournalEntry()">Save Entry</button>
+                    </div>
+
+                    <div class="journal-entries" id="journal-entries-container">
+                        <!-- Entries injected here by script.js -->
+                    </div>
+
+                    <div class="journal-ai-action">
+                        <button class="btn-analyze" onclick="window.analyzeJournalWeek()" id="analyze-btn">
+                            <i class="fas fa-wand-magic-sparkles"></i> Analyze My Week
+                        </button>
+                    </div>
+                </aside>
             </div>
         </main>
 
@@ -133,7 +158,18 @@
                             <option value="55+">55+</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">Post to Feed</button>
+                    <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" id="post-incognito" style="width:18px; height:18px; margin:0;" title="Post as Anonymous User">
+                        <label for="post-incognito" style="margin:0; font-weight:500; color:var(--text-primary); cursor:pointer;">
+                            Incognito Mode <span style="color:var(--text-secondary); font-size:0.85rem; font-weight:normal;">(Hide my identity on the feed)</span>
+                        </label>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top: 1rem;">
+                        <button type="submit" class="btn-primary" style="flex:1; justify-content: center;">Post to Feed</button>
+                        <button type="button" class="btn-shatter" onclick="window.shatterPost()" style="flex:1; justify-content: center;" title="Vent and throw it away permanently">
+                            <i class="fas fa-heart-crack"></i> Shatter & Discard
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

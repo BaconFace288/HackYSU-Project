@@ -129,6 +129,20 @@ body {
     font-weight: 600;
 }
 
+.board-layout {
+    display: flex;
+    gap: 2rem;
+    max-width: 1200px; /* Wider to accommodate sidebar */
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+    .board-layout {
+        flex-direction: column;
+    }
+}
+
 .btn-primary {
     background: var(--primary);
     color: white;
@@ -151,11 +165,115 @@ body {
 
 /* Cards Feed */
 .feed-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    flex: 1; /* Takes up remaining space next to sidebar */
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
-    max-width: 1000px;
-    margin: 0 auto;
+    min-width: 0; /* Prevent flex overflow */
+}
+
+/* Journal Sidebar */
+.journal-sidebar {
+    width: 320px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 1.5rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 90px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 120px);
+}
+
+@media (max-width: 900px) {
+    .journal-sidebar {
+        width: 100%;
+        position: static;
+        max-height: 500px;
+    }
+}
+
+.journal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.journal-header p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.journal-input-area textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+}
+html.dark-mode .journal-input-area textarea {
+    background: rgba(255, 255, 255, 0.05);
+}
+.journal-input-area textarea:focus { border-color: var(--primary); }
+
+.journal-entries {
+    flex: 1;
+    overflow-y: auto;
+    margin: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 5px;
+}
+.journal-entry-card {
+    background: rgba(0,0,0,0.03);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+html.dark-mode .journal-entry-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.journal-entry-date {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.btn-analyze {
+    width: 100%;
+    background: linear-gradient(135deg, var(--secondary-accent), var(--primary));
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s, opacity 0.2s;
+    box-shadow: 0 4px 15px rgba(119, 53, 133, 0.3);
+}
+.btn-analyze:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
 }
 
 .post-card {
@@ -393,6 +511,43 @@ body {
     max-width: 500px;
     box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
     animation: slideUp 0.3s ease;
+    transition: all 0.2s ease;
+}
+
+.btn-shatter {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-shatter:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Shatter Animation Keyframes */
+@keyframes shatter {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+    10% { transform: scale(1.05) rotate(-2deg); filter: brightness(1.2); }
+    20% { transform: scale(1.05) rotate(2deg); filter: sepia(0.5) hue-rotate(-50deg); }
+    30% { transform: scale(1.05) rotate(-2deg); opacity: 0.9; }
+    40% { transform: scale(0.95) rotate(1deg); opacity: 0.8; }
+    50% { transform: scale(1.1) translateY(10px) rotate(-5deg); opacity: 0.5; filter: blur(2px); }
+    100% { transform: scale(0.5) translateY(100px) rotate(20deg); opacity: 0; filter: blur(5px); }
+}
+
+.shatter-animation {
+    animation: shatter 0.8s cubic-bezier(0.36, 0, 0.66, -0.56) forwards !important;
+    pointer-events: none;
 }
 
 @keyframes slideUp {

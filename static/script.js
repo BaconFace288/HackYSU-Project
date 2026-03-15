@@ -57,6 +57,7 @@ onAuthStateChanged(auth, async (user) => {
         currentUserAgeRange = userData.ageRange || 'everyone'; // store globally
         setupUI(role);
         listenForPosts(); // Load the Community Feed immediately
+        loadJournalEntries(); // Load the User's Private Journal
         checkTherapistStatus(user.uid); // Watch for approval/denial notifications
     } else {
         window.location.href = '/login';
@@ -314,12 +315,35 @@ window.closeCreateModal = function () {
 window.submitPost = async function (event) {
     event.preventDefault();
 
-    const title = document.getElementById('post-title').value.trim();
-    const desc = document.getElementById('post-desc').value.trim();
+    const titleInput = document.getElementById('post-title');
+    const descInput = document.getElementById('post-desc');
     const audienceEl = document.getElementById('post-audience');
+    const incognitoBtn = document.getElementById('post-incognito');
+    
+    const title = titleInput.value.trim();
+    const desc = descInput.value.trim();
     const audience = audienceEl ? audienceEl.value : 'everyone';
+    const isIncognito = incognitoBtn ? incognitoBtn.checked : false;
 
-    if (!title || !desc) return;
+    if (!title || !desc) {
+        alert("Please fill in both fields.");
+        return;
+    }
+
+    if (!currentUser) {
+        alert("You must be logged in to post.");
+        return;
+    }
+
+    // Check for profanity before proceeding
+    if (containsProfanity(title) || containsProfanity(desc)) {
+        if (typeof window.showProfanityAlert === 'function') {
+            window.showProfanityAlert();
+        } else {
+            alert("Your post contains inappropriate language. Please revise it.");
+        }
+        return;
+    }
 
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
@@ -330,15 +354,24 @@ window.submitPost = async function (event) {
     // regular users must wait for a host to volunteer.
     const isPrivileged = currentUserRole === 'admin' || currentUserRole === 'Certified Therapist';
     const status = isPrivileged ? 'active' : 'pending';
+    
+    // Determine author profile
+    const authorName = isIncognito ? "Anonymous User" : (currentUser.displayName || 'User');
+    const authorAvatar = isIncognito 
+        ? "https://ui-avatars.com/api/?name=?&background=773585&color=fff&rounded=true" 
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'U')}&background=008088&color=fff&rounded=true`;
 
     try {
         await addDoc(collection(db, "posts"), {
             title: title,
             description: desc,
-            hostName: isPrivileged ? (currentUser.displayName || 'Anonymous') : null,
+            hostName: isPrivileged ? authorName : null,
             hostUid: isPrivileged ? currentUser.uid : null,
-            creatorName: currentUser.displayName || 'Anonymous',
-            creatorUid: currentUser.uid,
+            hostAvatar: isPrivileged ? authorAvatar : null,
+            creatorName: authorName,
+            creatorAvatar: authorAvatar,
+            creatorUid: currentUser.uid, // Always keep real ID for moderation
+            isAnonymous: isIncognito,
             status: status,
             audience: audience,
             createdAt: Date.now()
@@ -356,6 +389,36 @@ window.submitPost = async function (event) {
         submitBtn.disabled = false;
     }
 }
+
+window.shatterPost = function() {
+    const titleInput = document.getElementById('post-title').value.trim();
+    const descInput = document.getElementById('post-desc').value.trim();
+    
+    if (!titleInput && !descInput) {
+        window.closeCreateModal();
+        return;
+    }
+    
+    const modalContent = document.querySelector('.modal-content');
+    modalContent.classList.add('shatter-animation');
+    
+    // After animation finishes, clean up the form and DOM
+    setTimeout(() => {
+        document.getElementById('post-title').value = '';
+        document.getElementById('post-desc').value = '';
+        const incogBtn = document.getElementById('post-incognito');
+        if (incogBtn) incogBtn.checked = false;
+        
+        modalContent.classList.remove('shatter-animation');
+        window.closeCreateModal();
+        
+        if (typeof window.showProfanityAlert === 'function') {
+            window.showProfanityAlert("Your frustration was shattered and released into the void. 💙");
+        } else {
+            alert("Your frustration was shattered and released.");
+        }
+    }, 800); // Wait for the 0.8s CSS animation to finish
+};
 
 // Admin/Therapist volunteers to host a pending post
 window.hostPost = async function (postId, event) {
@@ -823,3 +886,130 @@ function showTherapistPopup(type, reason) {
     `;
     popup.style.display = 'flex';
 }
+
+// ==========================================
+// PRIVATE JOURNAL & AI INSIGHTS
+// ==========================================
+
+function loadJournalEntries() {
+    if (!currentUser) return;
+    const journalQ = query(
+        collection(db, "journals"),
+        // We can't do a compound query `where` without an index, so we sort by date and filter client-side for now
+        orderBy("createdAt", "desc")
+    );
+
+    onSnapshot(journalQ, (snap) => {
+        const container = document.getElementById('journal-entries-container');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        let entryCount = 0;
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            // Client-side filter to only show this user's entries
+            if (data.userId !== currentUser.uid) return;
+            
+            entryCount++;
+            const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleDateString(undefined, {
+                weekday: 'short', month: 'short', day: 'numeric',
+                hour: 'numeric', minute: '2-digit'
+            }) : 'Just now';
+
+            const div = document.createElement('div');
+            div.className = 'journal-entry-card';
+            div.innerHTML = `
+                <span class="journal-entry-date">${dateStr}</span>
+                <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(data.text)}</div>
+            `;
+            container.appendChild(div);
+        });
+
+        if (entryCount === 0) {
+            container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.85rem; text-align:center; padding:1rem;">Your journal is empty. What are you feeling today?</div>';
+        }
+    });
+}
+
+window.saveJournalEntry = async function() {
+    if (!currentUser) return;
+    const input = document.getElementById('journal-input');
+    const text = input.value.trim();
+    if (!text) {
+        showProfanityAlert("Please write something before saving.");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "journals"), {
+            userId: currentUser.uid,
+            text: text,
+            createdAt: serverTimestamp()
+        });
+        input.value = '';
+    } catch (e) {
+        console.error("Error saving journal entry:", e);
+        showProfanityAlert("Failed to save entry. Check your connection.");
+    }
+};
+
+window.analyzeJournalWeek = async function() {
+    if (!currentUser) return;
+    
+    const btn = document.getElementById('analyze-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    btn.disabled = true;
+
+    try {
+        // Collect up to the last 7 entries for analysis
+        const container = document.getElementById('journal-entries-container');
+        const cards = container.querySelectorAll('.journal-entry-card div:last-child');
+        const entries = Array.from(cards).slice(0, 7).map(el => el.textContent.trim());
+
+        if (entries.length === 0) {
+            showProfanityAlert("You haven't written any journal entries yet to summarize!");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        const idToken = await auth.currentUser.getIdToken();
+        const response = await fetch('/api/journal-insight', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ entries: entries.reverse() }) // Send oldest first to chronological order
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.insight) {
+            // Render the AI insight as a "pinned" topmost card
+            let insightCard = document.getElementById('ai-insight-card');
+            if (!insightCard) {
+                insightCard = document.createElement('div');
+                insightCard.id = 'ai-insight-card';
+                insightCard.style.cssText = 'background: linear-gradient(135deg, rgba(0,128,136,0.1), rgba(119,53,133,0.1)); border: 1px solid rgba(119,53,133,0.3); padding: 12px; border-radius: 10px; font-size: 0.88rem; line-height: 1.5; margin-bottom: 12px; position: relative;';
+                container.prepend(insightCard);
+            }
+            insightCard.innerHTML = `
+                <div style="font-weight:700; color: #773585; margin-bottom: 6px; display:flex; align-items:center;">
+                    <i class="fas fa-sparkles" style="margin-right:6px;"></i> HealBot Insight
+                    <button onclick="this.parentElement.parentElement.remove()" style="margin-left:auto; background:none; border:none; cursor:pointer; color:var(--text-secondary);">✕</button>
+                </div>
+                <div>${escapeHtml(data.insight)}</div>
+            `;
+        } else {
+            showProfanityAlert("Error analyzing week: " + (data.error || "Unknown"));
+        }
+    } catch (e) {
+        console.error(e);
+        showProfanityAlert("Network error while trying to reach AI companion.");
+    }
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+};
