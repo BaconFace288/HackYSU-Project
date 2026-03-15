@@ -154,6 +154,9 @@ async def check_intent(body: IntentRequest, user: dict = Depends(verify_token)):
                 "content": (
                     "You are a crisis intent detection AI for a mental-health peer-support platform. "
                     "Analyze the given text and determine if the user has clear hazardous intent (e.g., self-harm, suicide, harming others). "
+                    "Be particularly sensitive to subtle or indirect expressions of despair, finality, or giving up, such as: "
+                    "\"I can't do this anymore\", \"everyone would be better off without me\", \"I'm tired of fighting\", "
+                    "\"there's no way out\", \"it's time to end the pain\", or \"goodbye everyone\".\n\n"
                     "Answer ONLY with a JSON object like: {\"hazardous\": true, \"reason\": \"Brief reason for flagging\"} "
                     "or {\"hazardous\": false, \"reason\": \"\"}.\n"
                     "Return ONLY valid JSON, no markdown.\n\n"

@@ -520,14 +520,136 @@
     </div>
 </div>
 
+<!-- ===== Crisis Support Popup (from index.html) ===== -->
+<div id="crisis-popup" style="
+    display: none;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(520px, 94vw);
+    background: var(--card-bg);
+    border: 1.5px solid rgba(119, 53, 133, 0.4);
+    border-radius: 18px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    padding: 1.5rem 1.75rem;
+    z-index: 9999;
+    backdrop-filter: blur(16px);
+    animation: crisisSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+">
+    <style>
+        @keyframes crisisSlideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .crisis-popup-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 1rem;
+        }
+        .crisis-popup-icon {
+            font-size: 2rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .crisis-popup-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #773585;
+            margin-bottom: 4px;
+        }
+        .crisis-popup-sub {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .crisis-popup-resources {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(119,53,133,0.06);
+            border-radius: 10px;
+            border: 1px solid rgba(119,53,133,0.15);
+        }
+        .crisis-popup-resource {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        .crisis-popup-resource a {
+            color: #008088;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .crisis-popup-resource a:hover { text-decoration: underline; }
+        .crisis-popup-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .crisis-popup-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        .crisis-popup-btn:hover { opacity: 0.85; }
+        .crisis-popup-btn-primary {
+            background: linear-gradient(135deg, #773585, #008088);
+            color: white;
+        }
+        .crisis-popup-btn-dismiss {
+            background: rgba(0,0,0,0.06);
+            color: var(--text-secondary);
+        }
+        html.dark-mode .crisis-popup-btn-dismiss { background: rgba(255,255,255,0.08); }
+    </style>
+    <div class="crisis-popup-header">
+        <div class="crisis-popup-icon">💜</div>
+        <div>
+            <div class="crisis-popup-title">You're not alone — help is here</div>
+            <div class="crisis-popup-sub">
+                We noticed your message and want you to know that <strong>a HealSpace admin has been notified</strong> and may reach out to you directly.
+                Please consider speaking with a crisis counsellor — it's free, confidential, and available right now.
+            </div>
+        </div>
+    </div>
+    <div class="crisis-popup-resources">
+        <div class="crisis-popup-resource">
+            📞 <span><strong>988 Suicide &amp; Crisis Lifeline</strong> — Call or text <a href="tel:988">988</a></span>
+        </div>
+        <div class="crisis-popup-resource">
+            💬 <span><strong>Crisis Text Line</strong> — Text HOME to <a href="sms:741741">741741</a></span>
+        </div>
+        <div class="crisis-popup-resource">
+            🌐 <span><strong>International resources</strong> — <a href="https://findahelpline.com" target="_blank">findahelpline.com</a></span>
+        </div>
+    </div>
+    <div class="crisis-popup-footer">
+        <button class="crisis-popup-btn crisis-popup-btn-dismiss" onclick="document.getElementById('crisis-popup').style.display='none'">I'm okay right now</button>
+        <button class="crisis-popup-btn crisis-popup-btn-primary" onclick="document.getElementById('crisis-popup').style.display='none'">Speak with a counselor</button>
+    </div>
+</div>
+
+
 <script type="module">
     import { auth, db } from '/static/firebase.js';
     import { containsProfanity } from '/static/profanity.js';
+    import { checkForCrisisKeywords, triggerCrisisPopup } from '/static/crisis_utils.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
     import {
         collection, addDoc, query, where, onSnapshot,
         orderBy, doc, getDoc, serverTimestamp, updateDoc, arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
 
     let currentUser = null;
     let currentUserRole = 'user';
@@ -950,7 +1072,25 @@
                 role: currentUserRole,
                 createdAt: Date.now()
             });
+
+            // ---- Crisis Detection ----
+            const triggeredKeyword = checkForCrisisKeywords(text);
+            if (triggeredKeyword) {
+                // Write a flag to the admin-visible flaggedMessages collection
+                await addDoc(collection(db, "flaggedMessages"), {
+                    text: text,
+                    triggerKeyword: triggeredKeyword,
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName || 'Anonymous',
+                    roomId: roomId,
+                    roomTitle: document.getElementById('thread-header').innerText || 'Group Chat',
+                    flaggedAt: Date.now(),
+                    dismissed: false
+                });
+                triggerCrisisPopup();
+            }
         } catch (err) {
+
             console.error("Group send error:", err);
         }
     }
@@ -1012,7 +1152,25 @@
             await updateDoc(doc(db, "conversations", activeConvId), {
                 lastMessage: `${currentUser.displayName}: ${text.slice(0, 60)}`
             });
+
+            // ---- Crisis Detection ----
+            const triggeredKeyword = checkForCrisisKeywords(text);
+            if (triggeredKeyword) {
+                // Write a flag for private convos too
+                await addDoc(collection(db, "flaggedMessages"), {
+                    text: text,
+                    triggerKeyword: triggeredKeyword,
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName || 'Anonymous',
+                    roomId: activeConvId,
+                    roomTitle: 'Private Conversation',
+                    flaggedAt: Date.now(),
+                    dismissed: false
+                });
+                triggerCrisisPopup();
+            }
         } catch (err) {
+
             console.error("Send error:", err);
             alert("Failed to send: " + err.message);
         }

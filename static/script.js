@@ -13,6 +13,8 @@ import {
     updateDoc,
     arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { checkForCrisisKeywords, triggerCrisisPopup } from './crisis_utils.js';
+
 
 // DOM Elements
 const boardView = document.getElementById('board-view');
@@ -485,24 +487,9 @@ function connectToRoomChat(roomId) {
 }
 
 // =========== Crisis Keyword Detection ===========
-const CRISIS_KEYWORDS = [
-    // Self-harm / suicide
-    'suicide', 'suicidal', 'kill myself', 'killing myself', 'end my life', 'end it all',
-    'take my life', 'take my own life', 'want to die', 'wanna die', 'going to die',
-    'i want to die', 'i wanna die', 'dont want to live', "don't want to live",
-    'no reason to live', 'not worth living', 'life is not worth', 'tired of living',
-    'self harm', 'self-harm', 'cutting myself', 'hurt myself', 'hurting myself',
-    'overdose', 'hang myself', 'shoot myself', 'slit my wrists',
-    // Harm to others
-    'kill someone', 'hurt someone', 'harm someone', 'going to hurt', 'going to kill',
-    'want to hurt', 'want to kill', 'shooting', 'stabbing'
-];
-
-function checkForCrisisKeywords(text) {
-    const lower = text.toLowerCase();
-    return CRISIS_KEYWORDS.find(kw => lower.includes(kw)) || null;
-}
 window.checkForCrisisKeywords = checkForCrisisKeywords;
+window.showCrisisPopup = triggerCrisisPopup;
+
 
 window.sendMessage = async function (event) {
     event.preventDefault();
@@ -628,8 +615,9 @@ window.sendMessage = async function (event) {
                 dismissed: false
             });
             // Show the in-site support popup to the user
-            showCrisisPopup();
+            triggerCrisisPopup();
         }
+
     } catch (e) {
         console.error("Error adding message: ", e);
         alert("Failed to send: " + e.message);
