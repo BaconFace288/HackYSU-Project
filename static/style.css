@@ -629,6 +629,59 @@ html.dark-mode .journal-entry-card {
     color: #0f172a;
 }
 
+/* Age Group Multi-Select Chips */
+.age-group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.age-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+html.dark-mode .age-chip {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.age-chip:hover {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
+}
+
+html.dark-mode .age-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.age-chip input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.age-chip:has(input:checked) {
+    background: rgba(0, 128, 136, 0.12);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+html.dark-mode .age-chip:has(input:checked) {
+    background: rgba(0, 128, 136, 0.2);
+}
+
 /* Scrollbar formatting */
 ::-webkit-scrollbar {
     width: 6px;

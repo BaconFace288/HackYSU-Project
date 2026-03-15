@@ -219,9 +219,13 @@ function renderFeed(snapshot) {
     if (!isPrivileged) {
         docs = docs.filter(d => {
             const audience = d.data().audience || 'everyone';
+            if (Array.isArray(audience)) {
+                return audience.includes('everyone') || audience.includes(currentUserAgeRange);
+            }
             return audience === 'everyone' || audience === currentUserAgeRange;
         });
     }
+
 
     if (docs.length === 0) {
         const emptyMsg = currentFeedFilter === 'hosted'
@@ -310,22 +314,33 @@ window.closeCreateModal = function () {
     createModal.style.display = 'none';
     document.getElementById('post-title').value = '';
     document.getElementById('post-desc').value = '';
-    const audienceSel = document.getElementById('post-audience');
-    if (audienceSel) audienceSel.value = 'everyone';
+    const ageGrid = document.getElementById('age-group-grid');
+    if (ageGrid) {
+        const checkboxes = ageGrid.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = cb.value === 'everyone');
+    }
 }
+
 
 window.submitPost = async function (event) {
     event.preventDefault();
 
     const titleInput = document.getElementById('post-title');
     const descInput = document.getElementById('post-desc');
-    const audienceEl = document.getElementById('post-audience');
+    const ageGrid = document.getElementById('age-group-grid');
     const incognitoBtn = document.getElementById('post-incognito');
     
     const title = titleInput.value.trim();
     const desc = descInput.value.trim();
-    const audience = audienceEl ? audienceEl.value : 'everyone';
+    
+    // Collect all checked age groups
+    let audience = ['everyone'];
+    if (ageGrid) {
+        const checked = Array.from(ageGrid.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        if (checked.length > 0) audience = checked;
+    }
     const isIncognito = incognitoBtn ? incognitoBtn.checked : false;
+
 
     if (!title || !desc) {
         alert("Please fill in both fields.");

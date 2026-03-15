@@ -147,16 +147,16 @@
                         <textarea id="post-desc" required placeholder="Provide a little background on what you want to talk about..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="post-audience">Who can see this post?</label>
-                        <select id="post-audience">
-                            <option value="everyone">👥 Everyone</option>
-                            <option value="13-17">13–17</option>
-                            <option value="18-24">18–24</option>
-                            <option value="25-34">25–34</option>
-                            <option value="35-44">35–44</option>
-                            <option value="45-54">45–54</option>
-                            <option value="55+">55+</option>
-                        </select>
+                        <label>Who can see this post? (Select all that apply)</label>
+                        <div class="age-group-grid" id="age-group-grid">
+                            <label class="age-chip"><input type="checkbox" value="everyone" checked> 👥 Everyone</label>
+                            <label class="age-chip"><input type="checkbox" value="13-17"> 13–17</label>
+                            <label class="age-chip"><input type="checkbox" value="18-24"> 18–24</label>
+                            <label class="age-chip"><input type="checkbox" value="25-34"> 25–34</label>
+                            <label class="age-chip"><input type="checkbox" value="35-44"> 35–44</label>
+                            <label class="age-chip"><input type="checkbox" value="45-54"> 45–54</label>
+                            <label class="age-chip"><input type="checkbox" value="55+"> 55+</label>
+                        </div>
                     </div>
                     <div class="form-group" style="display:flex; align-items:center; gap:8px;">
                         <input type="checkbox" id="post-incognito" style="width:18px; height:18px; margin:0;" title="Post as Anonymous User">
